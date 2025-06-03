@@ -1,0 +1,57 @@
+2025-06-04 02:00:33,091 - INFO - Starting TFN Billing application
+2025-06-04 02:00:33,091 - INFO - Initializing directories and files
+2025-06-04 02:00:33,091 - INFO - Application directory: D:\T.F.N Billing
+2025-06-04 02:00:33,091 - INFO - Changed working directory to: D:\T.F.N Billing
+2025-06-04 02:00:33,717 - DEBUG - matplotlib data path: C:\Users\rakes\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\matplotlib\mpl-data
+2025-06-04 02:00:33,722 - DEBUG - CONFIGDIR=C:\Users\rakes\.matplotlib
+2025-06-04 02:00:33,723 - DEBUG - interactive is False
+2025-06-04 02:00:33,723 - DEBUG - platform is win32
+2025-06-04 02:00:33,735 - INFO - All required packages are installed
+2025-06-04 02:00:33,735 - INFO - Python path: ['D:\\T.F.N Billing', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\python313.zip', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\DLLs', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0', 'C:\\Users\\rakes\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python313\\site-packages', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib\\site-packages']
+2025-06-04 02:00:33,735 - INFO - Current directory: D:\T.F.N Billing
+2025-06-04 02:00:33,736 - INFO - Directory contents: ['app.spec', 'assets', 'build', 'customers.json', 'dist', 'invoice_log.json', 'invoice_tracker.json', 'launcher.py', 'logs', 'main.py', 'MMM', 'output_invoices', 'README.md', 'requirements.txt', 'tfn_billing_debug.log', 'Thunderstorm Bill Generator.spec', 'users.json']
+2025-06-04 02:00:33,736 - INFO - Importing main module
+2025-06-04 02:00:33,960 - DEBUG - CACHEDIR=C:\Users\rakes\.matplotlib
+2025-06-04 02:00:33,963 - DEBUG - Using fontManager instance from C:\Users\rakes\.matplotlib\fontlist-v390.json
+2025-06-04 02:00:34,160 - INFO - Starting main application
+2025-06-04 02:00:34,161 - ERROR - Error: Failed to start application:
+'NoneType' object has no attribute 'mainloop'
+
+Details:
+Current directory: D:\T.F.N Billing
+Python path: ['D:\\T.F.N Billing', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\python313.zip', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\DLLs', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0', 'C:\\Users\\rakes\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python313\\site-packages', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib\\site-packages']
+Files in directory: ['app.spec', 'assets', 'build', 'customers.json', 'dist', 'invoice_log.json', 'invoice_tracker.json', 'launcher.py', 'logs', 'main.py', 'MMM', 'output_invoices', 'README.md', 'requirements.txt', 'tfn_billing_debug.log', 'Thunderstorm Bill Generator.spec', 'users.json', '__pycache__']
+
+Full traceback:
+Traceback (most recent call last):
+  File "D:\T.F.N Billing\launcher.py", line 187, in main
+    app.mainloop()
+    ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'mainloop'
+
+2025-06-04 02:00:36,378 - ERROR - Failed to start application:
+'NoneType' object has no attribute 'mainloop'
+
+Details:
+Current directory: D:\T.F.N Billing
+Python path: ['D:\\T.F.N Billing', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\python313.zip', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\DLLs', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0', 'C:\\Users\\rakes\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python313\\site-packages', 'C:\\Program Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_3.13.1008.0_x64__qbz5n2kfra8p0\\Lib\\site-packages']
+Files in directory: ['app.spec', 'assets', 'build', 'customers.json', 'dist', 'invoice_log.json', 'invoice_tracker.json', 'launcher.py', 'logs', 'main.py', 'MMM', 'output_invoices', 'README.md', 'requirements.txt', 'tfn_billing_debug.log', 'Thunderstorm Bill Generator.spec', 'users.json', '__pycache__']
+
+Full traceback:
+Traceback (most recent call last):
+  File "D:\T.F.N Billing\launcher.py", line 187, in main
+    app.mainloop()
+    ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'mainloop'
+
+2025-06-04 02:00:36,379 - CRITICAL - Unhandled exception: 'NoneType' object has no attribute 'mainloop'
+Traceback (most recent call last):
+  File "D:\T.F.N Billing\launcher.py", line 201, in <module>
+    main()
+    ~~~~^^
+  File "D:\T.F.N Billing\launcher.py", line 187, in main
+    app.mainloop()
+    ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'mainloop'
+
+2025-06-04 02:00:36,379 - ERROR - Critical Error: Unhandled exception: 'NoneType' object has no attribute 'mainloop'

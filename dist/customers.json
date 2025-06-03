@@ -1,0 +1,16 @@
+[
+    {
+        "customer_id": "TFN001",
+        "name": "Test Customer",
+        "tenant_name": "Test Tenant",
+        "customer_address": "123 Test Street, Test City",
+        "customer_gstin": "",
+        "email": "test@example.com",
+        "phone": "1234567890",
+        "plan": "100 MBPS UNL",
+        "installation_date": "01-04-2024",
+        "notes": "Test customer for verification",
+        "created_date": "01-04-2024 10:00:00",
+        "last_modified": "01-04-2024 10:00:00"
+    }
+]
