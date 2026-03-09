@@ -273,23 +273,23 @@ def check_for_updates():
         with open(version_file, 'r') as f:
             local_version = json.load(f).get("version", "0.0.0")
         
-        print(f"Checking for updates at: {url} (Local version: {local_version})")
         response = requests.get(url, timeout=10)
-        print(f"GitHub API Response: {response.status_code}")
+        print(f"DEBUG: GitHub API Status: {response.status_code}")
         
         # If no release found, we can't update, but we return status
         if response.status_code == 404:
             # Check for MOCK mode (only for dev testing)
             if local_version == "0.9.0":
-                print("Triggering MOCK Update mode...")
+                print("DEBUG: Triggering MOCK Update mode...")
+                # Try to find IF there's any release at all to get a real URL
                 return {
                     "status": "update_available",
                     "local": local_version,
-                    "latest": "1.0.0",
-                    "notes": "MOCK UPDATE: Testing the update banner and download flow.",
-                    "url": "https://github.com/bloodwraith8851/T.F.N-Billing/releases/download/v1.0.0/Thunderstorm_Billing_Setup.exe"
+                    "latest": "1.0.0 (MOCK)",
+                    "notes": "MOCK UPDATE: Testing the update UI. Note: The download will only work if a v1.0.0 release exists with a 'Setup.exe'.",
+                    "url": f"https://github.com/{repo}/releases/download/v1.0.0/Thunderstorm_Billing_Setup.exe"
                 }
-            print("No release found and version is not 0.9.0. Skipping update banner.")
+            print("DEBUG: No release found and version is not 0.9.0.")
             return {"status": "no_update", "local": local_version, "message": "No releases found on GitHub yet."}
 
         if response.status_code == 200:
@@ -301,10 +301,13 @@ def check_for_updates():
             
             # Simple version comparison
             if latest_version > local_version:
-                # Find the installer asset
+                # Find the installer asset - look for ANY .exe if Setup.exe not found
                 assets = latest_release.get("assets", [])
                 installer_url = next((a.get("browser_download_url") for a in assets if "Setup.exe" in a.get("name", "")), None)
+                if not installer_url:
+                    installer_url = next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith(".exe")), None)
                 
+                print(f"DEBUG: Update found! Latest: {latest_version}. URL: {installer_url}")
                 return {
                     "status": "update_available",
                     "local": local_version,
@@ -319,29 +322,56 @@ def check_for_updates():
 
 @eel.expose
 def download_and_install_update(url):
-    """Download the update and run the installer."""
+    """Download the update and run the installer with improved logging and UI feedback."""
     if not url:
         return {"status": "error", "message": "No download URL provided"}
         
     def _do_update():
+        dest_path = ""
         try:
             temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
             dest_path = os.path.join(temp_dir, "Thunderstorm_Billing_Update_Setup.exe")
             
-            print(f"Downloading update from {url}...")
-            response = requests.get(url, stream=True)
+            print(f"DEBUG: Starting download from {url}")
+            
+            # Use a longer timeout and handle redirects
+            response = requests.get(url, stream=True, timeout=30, allow_redirects=True)
+            response.raise_for_status() # Check for HTTP errors
+            
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded_size = 0
+            
             with open(dest_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        if total_size > 0:
+                            percent = int((downloaded_size / total_size) * 100)
+                            # Update UI via Eel
+                            eel.update_download_status(f"Downloading... {percent}%")
             
-            print(f"Update downloaded to {dest_path}. Launching...")
+            print(f"DEBUG: Download completed. Launching installer...")
+            eel.update_download_status("Finalizing... Launching Installer")
             
             # Launch the installer and exit
-            subprocess.Popen([dest_path], shell=True)
-            os._exit(0) # Force close the python process
-            
+            if os.path.exists(dest_path):
+                subprocess.Popen([dest_path], shell=True)
+                time.sleep(1) # Give it a second to start
+                os._exit(0)
+            else:
+                raise Exception("Downloaded file not found on disk.")
+                
         except Exception as e:
-            print(f"Update Error: {e}")
+            msg = str(e)
+            print(f"FATAL UPDATE ERROR: {msg}")
+            # Try to notify the UI of the failure
+            try:
+                eel.update_download_status(f"Update Failed: {msg}")
+                # We can also call a specific error handler
+                eel.handle_update_error(msg)
+            except:
+                pass
             
     threading.Thread(target=_do_update, daemon=True).start()
     return {"status": "success"}

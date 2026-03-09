@@ -704,15 +704,34 @@ window.runUpdate = async (url) => {
         btn.disabled = true;
     }
 
-    showToast('info', 'ri-download-line', 'Downloading update in background... App will restart automatically.', 6000);
+    showToast('info', 'ri-download-line', 'Starting update download...', 3000);
 
     try {
         await eel.download_and_install_update(url)();
     } catch (e) {
-        showToast('error', 'ri-error-warning-line', 'Update failed to download.');
+        showToast('error', 'ri-error-warning-line', 'Failed to initiate download.');
         if (btn) {
             btn.innerHTML = 'Download & Install';
             btn.disabled = false;
         }
+    }
+}
+
+// Eel Callbacks for Update System
+eel.expose(update_download_status);
+function update_download_status(message) {
+    const btn = document.querySelector('.btn-update-now');
+    if (btn) {
+        btn.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> ${message}`;
+    }
+}
+
+eel.expose(handle_update_error);
+function handle_update_error(error) {
+    showToast('error', 'ri-error-warning-line', `Update Failed: ${error}`);
+    const btn = document.querySelector('.btn-update-now');
+    if (btn) {
+        btn.innerHTML = 'Download & Install';
+        btn.disabled = false;
     }
 }
