@@ -8,6 +8,7 @@ block_cipher = None
 datas = [
     ('web', 'web'),
     ('assets', 'assets'),
+    ('version.json', '.'),
 ]
 
 # Specifically ensure dependencies that might have data files are included

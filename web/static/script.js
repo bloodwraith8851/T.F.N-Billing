@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial data via Python Eel
     loadDashboard();
 
+    // Check for updates on startup
+    setTimeout(checkForUpdates, 3000); // Wait 3s after startup
+
     // Setup form listener
     document.getElementById('invoiceForm').addEventListener('submit', handleInvoiceSubmit);
     document.getElementById('inv-months').addEventListener('input', calculateTotal);
@@ -659,3 +662,51 @@ document.addEventListener('click', function (e) {
     btn.appendChild(ripple);
     ripple.addEventListener('animationend', () => ripple.remove());
 });
+// ==================== AUTO-UPDATE SYSTEM ====================
+async function checkForUpdates() {
+    try {
+        const result = await eel.check_for_updates()();
+        if (result.status === 'update_available') {
+            showUpdateBanner(result.latest, result.url);
+        }
+    } catch (e) {
+        console.error("Update check failed:", e);
+    }
+}
+
+function showUpdateBanner(version, downloadUrl) {
+    const banner = document.createElement('div');
+    banner.id = 'update-banner';
+    banner.className = 'update-banner animated-entry';
+    banner.innerHTML = `
+        <div class="update-content">
+            <i class="ri-rocket-2-line"></i>
+            <span>Update Available! <strong>v${version}</strong> is now available with new features.</span>
+        </div>
+        <div class="update-actions">
+            <button class="btn-update-now" onclick="runUpdate('${downloadUrl}')">Download & Install</button>
+            <button class="btn-update-close" onclick="this.parentElement.parentElement.remove()"><i class="ri-close-line"></i></button>
+        </div>
+    `;
+    document.body.appendChild(banner);
+}
+
+window.runUpdate = async (url) => {
+    const btn = document.querySelector('.btn-update-now');
+    if (btn) {
+        btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Downloading...';
+        btn.disabled = true;
+    }
+
+    showToast('info', 'ri-download-line', 'Downloading update in background... App will restart automatically.', 6000);
+
+    try {
+        await eel.download_and_install_update(url)();
+    } catch (e) {
+        showToast('error', 'ri-error-warning-line', 'Update failed to download.');
+        if (btn) {
+            btn.innerHTML = 'Download & Install';
+            btn.disabled = false;
+        }
+    }
+}

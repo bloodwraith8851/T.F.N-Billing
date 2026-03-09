@@ -1865,4 +1865,71 @@ select:focus {
     }
 }
 
+/* ==================== UPDATE BANNER ==================== */
+.update-banner {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74, 108, 250, 0.95);
+    backdrop-filter: blur(12px);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 10px 30px rgba(74, 108, 250, 0.4);
+    z-index: 10000;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.update-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.update-content i {
+    font-size: 1.2rem;
+    color: #ffd700;
+}
+
+.update-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-update-now {
+    background: white;
+    color: #4A6CFA;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-update-now:hover {
+    background: #f0f4ff;
+    transform: scale(1.05);
+}
+
+.btn-update-close {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.btn-update-close:hover {
+    opacity: 1;
+}
+
 /* ================================================================ */

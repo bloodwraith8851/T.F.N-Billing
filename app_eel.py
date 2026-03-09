@@ -1,8 +1,12 @@
 import eel
 import os
 import sys
+import json
+import requests
 import backend
 import threading
+import subprocess
+import time
 
 # Helper for PyInstaller resource paths
 def resource_path(relative_path):
@@ -253,6 +257,76 @@ def get_customer_profile(customer_id):
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@eel.expose
+def check_for_updates():
+    """Check GitHub for a newer version of the application."""
+    repo = "bloodwraith8851/T.F.N-Billing"
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    
+    try:
+        # Load local version
+        version_file = resource_path("version.json")
+        if not os.path.exists(version_file):
+            return {"status": "error", "message": "version.json not found"}
+            
+        with open(version_file, 'r') as f:
+            local_version = json.load(f).get("version", "0.0.0")
+        
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            latest_release = response.json()
+            latest_version = latest_release.get("tag_name", "").replace("v", "")
+            
+            if not latest_version:
+                return {"status": "no_update", "local": local_version}
+            
+            # Simple version comparison
+            if latest_version > local_version:
+                # Find the installer asset
+                assets = latest_release.get("assets", [])
+                installer_url = next((a.get("browser_download_url") for a in assets if "Setup.exe" in a.get("name", "")), None)
+                
+                return {
+                    "status": "update_available",
+                    "local": local_version,
+                    "latest": latest_version,
+                    "notes": latest_release.get("body", ""),
+                    "url": installer_url
+                }
+            
+        return {"status": "no_update", "local": local_version}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def download_and_install_update(url):
+    """Download the update and run the installer."""
+    if not url:
+        return {"status": "error", "message": "No download URL provided"}
+        
+    def _do_update():
+        try:
+            temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
+            dest_path = os.path.join(temp_dir, "Thunderstorm_Billing_Update_Setup.exe")
+            
+            print(f"Downloading update from {url}...")
+            response = requests.get(url, stream=True)
+            with open(dest_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            print(f"Update downloaded to {dest_path}. Launching...")
+            
+            # Launch the installer and exit
+            subprocess.Popen([dest_path], shell=True)
+            os._exit(0) # Force close the python process
+            
+        except Exception as e:
+            print(f"Update Error: {e}")
+            
+    threading.Thread(target=_do_update, daemon=True).start()
+    return {"status": "success"}
 
 def start_app():
     # Application launch options
