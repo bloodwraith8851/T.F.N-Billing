@@ -1,11 +1,15 @@
 <div align="center">
 
-# 🌌 THUNDERSTORM BILLING 🌌
-### _Aura-Powered ISP Management Dashboard_
+<img src="https://ui-avatars.com/api/?name=TF&background=4A6CFA&color=fff&size=128" alt="T.F.N Logo" width="128" style="border-radius: 20px; margin-bottom: 20px;">
 
-![Version](https://img.shields.io/badge/version-1.1.0-6D5BFF?style=for-the-badge&logo=rocket)
-![Python](https://img.shields.io/badge/python-3.10+-4A6CFA?style=for-the-badge&logo=python&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-9C27B0?style=for-the-badge)
+# 🌌 THUNDERSTORM BILLING 🌌
+### _The Atmosphere of Automated ISP Management_
+
+<br>
+
+[![Version](https://img.shields.io/badge/version-1.1.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing)
+[![Python](https://img.shields.io/badge/python-3.10+-4A6CFA?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-9C27B0?style=for-the-badge)](LICENSE)
 
 <br>
 
@@ -15,98 +19,104 @@
 
 <br>
 
-## 🎭 The Aesthetic
-**Thunderstorm Billing** is a high-performance ISP management suite wrapped in a **Calming Dashboard** aesthetic. It blends 3D particle physics with modern Glassmorphism to reduce "billing fatigue."
-- ☁️ **Cloud Morphism**: Dynamic CSS animations creating a breathing atmosphere.
-- ✨ **Stellar Particles**: Responsive 3D Canvas backdrops.
-- 🌌 **Aurora Shimmer**: Ethereal color gradients that shift with the time of day.
-- 🍃 **Glass UI**: Frosted-glass components for high-clarity data visualization.
+<blockquote align="center">
+  <p><i>"Transforming billing from a chore into a calming, ethereal experience."</i></p>
+</blockquote>
 
-```text
-  ╭───────────────────────────────────────────╮
-  │   ✦  THUNDERSTORM FIBERNET DASHBOARD  ✦   │
-  │                                           │
-  │      Static • Fluid • Ethereal • Win      │
-  ╰───────────────────────────────────────────╯
-```
+<br>
+
+## 🎭 The Aesthetic
+**Thunderstorm Billing** is built on a **Calming Dashboard** philosophy. It uses high-fidelity visual elements to reduce cognitive load and provide a premium user experience.
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>☁️ Cloud Morphism</b><br>Dynamic CSS breathing effects</td>
+      <td align="center"><b>✨ Stellar Particles</b><br>Responsive 3D Backdrop</td>
+    </tr>
+    <tr>
+      <td align="center"><b>🌌 Aurora Shimmer</b><br>Ethereal time-based gradients</td>
+      <td align="center"><b>🍃 Glass UI</b><br>Frosted-glass clarity</td>
+    </tr>
+  </table>
+</div>
 
 <br>
 
 ## ✨ Stellar Features
 
-### 💎 Core Architecture
-- **Smart Aura Invoicing**: GST-compliant PDF generation with automated archival.
-- **WhatsApp Stellar Sync**: Native automation (VBS/PyAutoGUI) for instant bill delivery.
-- **Luminous Dashboard**: Real-time revenue analytics via Chart.js.
-- **Customer Nebula**: Full-lifecycle customer management and searchable directory.
+> [!IMPORTANT]
+> **Aura Invoicing**: Every invoice is a GST-compliant masterwork, archived and numbered automatically.
+
+> [!TIP]
+> **Stellar Sync**: Use the integrated WhatsApp delivery suite to send bills directly to customer phones with zero friction.
+
+- **Luminous Dashboard**: Instant visual feedback on your revenue stream via real-time Chart.js assets.
+- **Customer Nebula**: A high-speed searchable directory for managing your subscriber base.
+- **Auto-Update Pulse**: Stay ahead with built-in GitHub monitoring and one-click installation.
 
 <br>
 
 ## 🌊 System Blueprint
-Understanding the cosmic energy behind the dashboard:
+<details>
+<summary><b>Click to expand Technical Architecture 🛠️</b></summary>
 
-### � Backend Engine (Python)
-- **`launcher.py`**: The entry portal. Handles version checks, splash screen logic, and initializes the environment.
-- **`app_eel.py`**: The "Star Bridge." Exposes Python's system-level power (PDF generation, file I/O) to the web interface.
-- **`backend.py`**: The logical core. Manages JSON data storage, PDF templating (ReportLab), and business calculations.
-- **`installer_setup.py`**: The architect script for building the standalone Windows installer.
+### 🐍 Backend Engine (Python)
+- **`launcher.py`**: The entry portal handling versioning and splash sequences.
+- **`app_eel.py`**: The Bridge connecting Python's logic to the Web interface.
+- **`backend.py`**: The logic core managing JSON storage and PDF (ReportLab) generation.
+- **`installer_setup.py`**: The architect script for building distributive Windows installers.
 
-### � Frontend Atmosphere (Web)
-- **`web/index.html`**: The physical structure. A single-page layout with smooth view-switching.
-- **`web/static/style.css`**: The Aura. Contains all Glassmorphism, Cloud animations, and Aurora shimmer logic.
-- **`web/static/script.js`**: The Consciousness. Manages 3D particles, real-time counters, charts, and bridge-calls to Python.
+### 🎨 Frontend Atmosphere (Web)
+- **`web/index.html`**: Semantic structure for a fluid single-page experience.
+- **`web/static/style.css`**: The Aura containing all Glassmorphism and animation logic.
+- **`web/static/script.js`**: The Consciousness managing particles, charts, and API bridges.
+</details>
 
 <br>
 
 ## 🚀 Fluid Setup
 
-```bash
-# Clone the repository
-git clone https://github.com/bloodwraith8851/T.F.N-Billing.git
-
-# Enter the atmosphere
-cd T.F.N-Billing
-
-# Hydrate dependencies
-pip install -r requirements.txt
-
-# Ignite the dashboard
-python launcher.py
-```
+1. **Clone the Atmosphere**
+   ```bash
+   git clone https://github.com/bloodwraith8851/T.F.N-Billing.git
+   ```
+2. **Hydrate Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Ignite the Dashboard**
+   ```bash
+   python launcher.py
+   ```
 
 <br>
 
 ## 🔮 Cosmic Vision (Roadmap)
 
-### 🛰️ Phase 1: Orbital Integration
-*Focus: Deepening current capabilities*
-- **Aura AI Assistant**: Voice-activated dashboard commands for "Hands-free" billing.
-- **Smart Templates**: Custom CSS/HTML templates for different invoice styles.
-- **Bulk Shimmer**: Generate 500+ invoices in one click with background threading.
+<details>
+<summary><b>View the 3-Phase Expansion Plan 🛰️</b></summary>
 
-### ☄️ Phase 2: Galactic Ecosystem
-*Focus: Connectivity and Mobility*
-- **Mobile Satellite**: A Flutter/React Native companion app for field technicians.
-- **Multiverse Sync**: Secure Cloud-to-Local mirroring for disaster recovery.
-- **SMS Nebula**: Direct SMS gateway integration for offline notifications.
+#### ☄️ Phase 1: Orbital Integration
+- **Aura AI Assistant**: Voice-activated billing commands.
+- **Bulk Shimmer**: Generator for 1000+ invoices in a single thread.
 
-### 🛡️ Phase 3: Infinite Intelligence
-*Focus: AI-Driven Insights*
-- **Churn Prediction**: AI monitoring to identify customers likely to disconnect.
-- **Auto-Reminders**: Smart WhatsApp/Bot agents that follow up on pending dues autonomously.
-- **Network Pulse**: Integration with Mikrotik/OLT APIs to show live service status on the dashboard.
+#### 🌌 Phase 2: Galactic Ecosystem
+- **Mobile Satellite**: Flutter-based field technician companion.
+- **Multiverse Sync**: Real-time Cloud-to-Local mirroring.
+
+#### 🛡️ Phase 3: Infinite Intelligence
+- **Churn Prediction**: AI monitoring for customer disconnect risks.
+- **Network Pulse**: Live MikroTik/OLT service status on the dashboard.
+</details>
 
 <br>
 
-## 🤝 Community & Support
+---
 
 <div align="center">
 
-| Channel | Link |
-| :--- | :--- |
-| **Issues** | [GitHub Orbit](https://github.com/bloodwraith8851/T.F.N-Billing/issues) |
-| **Support** | [Email Pulse](mailto:support@thunderstorm.com) |
-| **Developer** | [bloodwraith8851](https://github.com/bloodwraith8851) |
+**[GitHub Orbit](https://github.com/bloodwraith8851/T.F.N-Billing/issues)** • **[Email Pulse](mailto:support@thunderstorm.com)**
 
 <br>
 
@@ -114,4 +124,3 @@ python launcher.py
 _Elevating ISP Management to the Stars_
 
 </div>
-
