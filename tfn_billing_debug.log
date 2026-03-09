@@ -3443,3 +3443,40 @@ TypeError: start() got an unexpected keyword argument 'options'
 2026-03-09 11:10:08,937 - DEBUG - Closed WebSocket
 2026-03-09 11:10:08,939 - DEBUG - Failed to write closing frame -> closing socket
 2026-03-09 11:10:08,939 - DEBUG - Closed WebSocket
+2026-03-09 12:09:15,332 - INFO - Starting TFN Billing application
+2026-03-09 12:09:15,333 - INFO - Initializing directories and files
+2026-03-09 12:09:15,333 - INFO - Application directory: D:\T.F.N Billing
+2026-03-09 12:09:15,333 - INFO - Changed working directory to: D:\T.F.N Billing
+2026-03-09 12:09:16,749 - INFO - All required packages are installed
+2026-03-09 12:09:16,750 - INFO - Python path: ['D:\\T.F.N Billing', 'C:\\Python314\\python314.zip', 'C:\\Python314\\DLLs', 'C:\\Python314\\Lib', 'C:\\Python314', 'C:\\Users\\rakes\\AppData\\Roaming\\Python\\Python314\\site-packages', 'C:\\Users\\rakes\\AppData\\Roaming\\Python\\Python314\\site-packages\\win32', 'C:\\Users\\rakes\\AppData\\Roaming\\Python\\Python314\\site-packages\\win32\\lib', 'C:\\Users\\rakes\\AppData\\Roaming\\Python\\Python314\\site-packages\\Pythonwin', 'C:\\Python314\\Lib\\site-packages']
+2026-03-09 12:09:16,750 - INFO - Current directory: D:\T.F.N Billing
+2026-03-09 12:09:16,750 - INFO - Directory contents: ['.git', '.gitignore', 'app_eel.py', 'assets', 'backend.py', 'build', 'build.bat', 'build_installer.py', 'customers.json', 'dist', 'exports', 'installer_setup.py', 'invoice_log.json', 'invoice_tracker.json', 'launcher.py', 'launcher.spec', 'logs', 'output_invoices', 'README.md', 'requirements.txt', 'tfn_billing_debug.log', 'Thunderstorm_Billing_Setup.spec', 'users.json', 'version.json', 'web']
+2026-03-09 12:09:16,750 - INFO - Importing app_eel module
+2026-03-09 12:09:17,350 - INFO - Starting main application
+2026-03-09 12:09:18,154 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,155 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,157 - INFO - 127.0.0.1 - - [2026-03-09 12:09:18] "GET /index.html HTTP/1.1" 200 27499 0.003166
+2026-03-09 12:09:18,237 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,237 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,239 - INFO - 127.0.0.1 - - [2026-03-09 12:09:18] "GET /static/style.css HTTP/1.1" 200 39489 0.002018
+2026-03-09 12:09:18,240 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,241 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,242 - INFO - 127.0.0.1 - - [2026-03-09 12:09:18] "GET /eel.js HTTP/1.1" 200 6285 0.001123
+2026-03-09 12:09:18,255 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,255 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,262 - INFO - 127.0.0.1 - - [2026-03-09 12:09:18] "GET /static/assets/logo.png HTTP/1.1" 404 894 0.007163
+2026-03-09 12:09:18,374 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,374 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,376 - INFO - 127.0.0.1 - - [2026-03-09 12:09:18] "GET /static/script.js HTTP/1.1" 200 31493 0.001776
+2026-03-09 12:09:18,889 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:18,889 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:18,889 - DEBUG - Attempting to upgrade connection
+2026-03-09 12:09:18,889 - DEBUG - WebSocket request accepted, switching protocols
+2026-03-09 12:09:19,241 - DEBUG - Initializing WebSocket
+2026-03-09 12:09:19,241 - DEBUG - Validating WebSocket request
+2026-03-09 12:09:19,242 - INFO - 127.0.0.1 - - [2026-03-09 12:09:19] "GET /favicon.ico HTTP/1.1" 404 883 0.001473
+2026-03-09 12:09:21,600 - DEBUG - Starting new HTTPS connection (1): api.github.com:443
+2026-03-09 12:09:22,750 - DEBUG - https://api.github.com:443 "GET /repos/bloodwraith8851/T.F.N-Billing/releases/latest HTTP/1.1" 404 125
+2026-03-09 12:09:27,736 - DEBUG - Closed WebSocket
+2026-03-09 12:09:27,737 - DEBUG - Failed to write closing frame -> closing socket
+2026-03-09 12:09:27,737 - DEBUG - Closed WebSocket
