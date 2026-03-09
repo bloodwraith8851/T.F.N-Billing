@@ -25,6 +25,17 @@
 
 <br>
 
+## 🌟 About
+<div align="center">
+  <p>
+    A modern, open-source ISP billing system with dark-mode UI, built in Python. 
+    Features smart invoice generation, customer management, real-time analytics, and GST compliance. 
+    Perfect for ISPs seeking a free, feature-rich billing solution.
+  </p>
+</div>
+
+<br>
+
 ## 🎭 The Aesthetic
 **Thunderstorm Billing** is built on a **Calming Dashboard** philosophy. It uses high-fidelity visual elements to reduce cognitive load and provide a premium user experience.
 
