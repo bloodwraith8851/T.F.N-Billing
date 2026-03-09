@@ -273,12 +273,15 @@ def check_for_updates():
         with open(version_file, 'r') as f:
             local_version = json.load(f).get("version", "0.0.0")
         
+        print(f"Checking for updates at: {url} (Local version: {local_version})")
         response = requests.get(url, timeout=10)
+        print(f"GitHub API Response: {response.status_code}")
         
         # If no release found, we can't update, but we return status
         if response.status_code == 404:
             # Check for MOCK mode (only for dev testing)
             if local_version == "0.9.0":
+                print("Triggering MOCK Update mode...")
                 return {
                     "status": "update_available",
                     "local": local_version,
@@ -286,6 +289,7 @@ def check_for_updates():
                     "notes": "MOCK UPDATE: Testing the update banner and download flow.",
                     "url": "https://github.com/bloodwraith8851/T.F.N-Billing/releases/download/v1.0.0/Thunderstorm_Billing_Setup.exe"
                 }
+            print("No release found and version is not 0.9.0. Skipping update banner.")
             return {"status": "no_update", "local": local_version, "message": "No releases found on GitHub yet."}
 
         if response.status_code == 200:

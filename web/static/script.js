@@ -663,14 +663,20 @@ document.addEventListener('click', function (e) {
     ripple.addEventListener('animationend', () => ripple.remove());
 });
 // ==================== AUTO-UPDATE SYSTEM ====================
-async function checkForUpdates() {
+async function checkForUpdates(manual = false) {
+    console.log("Checking for updates...");
+    if (manual) showToast('info', 'ri-refresh-line', 'Checking for updates...');
     try {
         const result = await eel.check_for_updates()();
+        console.log("Update check result:", result);
         if (result.status === 'update_available') {
             showUpdateBanner(result.latest, result.url);
+        } else if (manual) {
+            showToast('success', 'ri-checkbox-circle-line', 'Your application is up to date!');
         }
     } catch (e) {
         console.error("Update check failed:", e);
+        if (manual) showToast('error', 'ri-error-warning-line', 'Update check failed. Check your internet.');
     }
 }
 
