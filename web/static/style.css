@@ -1868,20 +1868,25 @@ select:focus {
 /* ==================== UPDATE BANNER ==================== */
 .update-banner {
     position: fixed;
-    bottom: 24px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(74, 108, 250, 0.95);
-    backdrop-filter: blur(12px);
+    background: #4A6CFA;
     color: white;
-    padding: 12px 24px;
-    border-radius: 50px;
+    padding: 14px 30px;
+    border-radius: 100px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    box-shadow: 0 10px 30px rgba(74, 108, 250, 0.4);
+    gap: 25px;
+    box-shadow: 0 15px 45px rgba(74, 108, 250, 0.4);
     z-index: 10000;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: none;
+    animation: bannerUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bannerUp {
+    from { bottom: -100px; opacity: 0; }
+    to { bottom: 30px; opacity: 1; }
 }
 
 .update-content {
@@ -1905,12 +1910,12 @@ select:focus {
     background: white;
     color: #4A6CFA;
     border: none;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.85rem;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .btn-update-now:hover {

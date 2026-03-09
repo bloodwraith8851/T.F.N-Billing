@@ -672,7 +672,7 @@ async function checkForUpdates(manual = false) {
         if (result.status === 'update_available') {
             showUpdateBanner(result.latest, result.url);
         } else if (manual) {
-            showToast('success', 'ri-checkbox-circle-line', 'Your application is up to date!');
+            showToast('success', 'ri-checkbox-circle-line', 'You are already in latest version');
         }
     } catch (e) {
         console.error("Update check failed:", e);

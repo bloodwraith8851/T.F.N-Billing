@@ -14,68 +14,103 @@ ctk.set_default_color_theme("blue")
 
 class SpaceCanvas(Canvas):
     def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs, highlightthickness=0, bg="#0f172a") # Deep space blue
-        self.stars = []
+        super().__init__(master, **kwargs, highlightthickness=0, bg="#1a1c23") # Dark space matching dashboard exactly
+        self.particles = []
         self.clouds = []
         self.moon = None
         self.width = kwargs.get('width', 600)
         self.height = kwargs.get('height', 450)
         
+        # Colors from dashboard particles-js
+        self.colors = ["#ffffff", "#a8d8ff", "#ffd6a5", "#c8b8ff", "#b8f5e0"]
         self.create_space()
         self.animate()
         
     def create_space(self):
-        # Create Stars
-        for _ in range(100):
+        # 1. 3D Particles / Stars (Smaller, denser, like particles-js)
+        for _ in range(150):
             x = random.randint(0, self.width)
             y = random.randint(0, self.height)
-            size = random.uniform(0.5, 2.5)
-            alpha = random.uniform(0.3, 1.0)
-            star = self.create_oval(x, y, x+size, y+size, fill="white", outline="")
-            self.stars.append({
-                "id": star,
-                "speed": random.uniform(0.05, 0.15),
-                "alpha": alpha,
-                "blink": random.uniform(0.01, 0.05)
+            size = random.uniform(0.5, 2.0)
+            color = random.choice(self.colors)
+            
+            p = self.create_oval(x, y, x+size, y+size, fill=color, outline="")
+            
+            # Subtle glow for larger particles
+            if size > 1.2:
+                self.create_oval(x-1, y-1, x+size+1, y+size+1, fill="", outline=color, stipple="gray25")
+                
+            self.particles.append({
+                "id": p,
+                "dx": random.uniform(-0.2, 0.2), # slower movement
+                "dy": random.uniform(-0.2, 0.2),
+                "speed_factor": random.uniform(0.3, 1.0),
+                "color": color
             })
             
-        # Create Moon
-        mx, my = self.width - 100, 80
-        self.moon = self.create_oval(mx-40, my-40, mx+40, my+40, fill="#f1f5f9", outline="")
-        # Simple crater
-        self.create_oval(mx+5, my-10, mx+15, my, fill="#cbd5e1", outline="")
-        self.create_oval(mx-15, my+5, mx-5, my+15, fill="#cbd5e1", outline="")
+        # 2. Glowing Moon (Moved to match dashboard generally)
+        mx, my = self.width - 60, 100
+        # Halos for glow effect - matching the CSS radial gradients
+        self.create_oval(mx-45, my-45, mx+45, my+45, fill="#232731", outline="", stipple="gray25")
+        self.create_oval(mx-35, my-35, mx+35, my+35, fill="#2a2f3a", outline="")
+        # Core
+        self.moon = self.create_oval(mx-22, my-22, mx+22, my+22, fill="#fffbe6", outline="")
         
-        # Create Clouds
-        for _ in range(5):
-            cx = random.randint(0, self.width)
-            cy = random.randint(20, self.height-100)
-            cloud_id = self.create_oval(cx-60, cy-20, cx+60, cy+20, fill="#334155", outline="", stipple="gray25")
+        # 3. Fluffy Clouds (Simulating CSS clouds format - soft ethereal)
+        cloud_configs = [
+            {"x": -50, "y": 80, "speed": 0.2, "scale": 1.2, "color": "#1f222b", "stipple": "gray50"},
+            {"x": 200, "y": 180, "speed": 0.15, "scale": 0.9, "color": "#1d2028", "stipple": "gray50"},
+            {"x": 400, "y": 280, "speed": 0.25, "scale": 1.1, "color": "#21252f", "stipple": "gray50"},
+            {"x": -100, "y": 350, "speed": 0.3, "scale": 1.0, "color": "#242934", "stipple": "gray25"},
+            {"x": 300, "y": 60, "speed": 0.1, "scale": 0.7, "color": "#1c1f26", "stipple": "gray50"}
+        ]
+        
+        for c in cloud_configs:
+            x, y = c["x"], c["y"]
+            s = c["scale"]
+            col = c["color"]
+            stip = c["stipple"]
+            
+            # Base oval body
+            p1 = self.create_oval(x, y, x + 100*s, y + 35*s, fill=col, outline="", stipple=stip)
+            # Puffs (top)
+            p2 = self.create_oval(x + 15*s, y - 20*s, x + 50*s, y + 25*s, fill=col, outline="", stipple=stip)
+            p3 = self.create_oval(x + 40*s, y - 15*s, x + 80*s, y + 25*s, fill=col, outline="", stipple=stip)
+            
             self.clouds.append({
-                "id": cloud_id,
-                "speed": random.uniform(0.2, 0.5),
-                "x": cx
+                "parts": [p1, p2, p3],
+                "speed": c["speed"]
             })
 
     def animate(self):
-        # Move Stars
-        for star in self.stars:
-            self.move(star["id"], -star["speed"], 0)
-            coords = self.coords(star["id"])
-            if coords[0] < -5:
-                self.move(star["id"], self.width + 10, 0)
+        # Move Particles
+        for p in self.particles:
+            self.move(p["id"], p["dx"] * p["speed_factor"], p["dy"] * p["speed_factor"])
+            coords = self.coords(p["id"])
+            if not coords: continue
+            
+            # Wrap around boundaries
+            if coords[0] < -5: self.move(p["id"], self.width + 10, 0)
+            elif coords[2] > self.width + 5: self.move(p["id"], -self.width - 10, 0)
+            
+            if coords[1] < -5: self.move(p["id"], 0, self.height + 10)
+            elif coords[3] > self.height + 5: self.move(p["id"], 0, -self.height - 10)
             
             # Twinkle
-            if random.random() < 0.05:
-                current_fill = self.itemcget(star["id"], "fill")
-                self.itemconfig(star["id"], fill="white" if random.random() > 0.5 else "gray50")
+            if random.random() < 0.01: # Slower twinkle
+                current_fill = self.itemcget(p["id"], "fill")
+                self.itemconfig(p["id"], fill="#1a1c23" if current_fill != "#1a1c23" else p["color"])
 
-        # Move Clouds
-        for cloud in self.clouds:
-            self.move(cloud["id"], cloud["speed"], 0)
-            coords = self.coords(cloud["id"])
-            if coords[0] > self.width + 70:
-                self.move(cloud["id"], -self.width - 140, 0)
+        # Move Fluffy Clouds
+        for c in self.clouds:
+            for part in c["parts"]:
+                self.move(part, c["speed"], 0)
+            
+            # Wrap wrap logic
+            first_part_coords = self.coords(c["parts"][0])
+            if first_part_coords and first_part_coords[0] > self.width + 50:
+                for part in c["parts"]:
+                    self.move(part, -self.width - 250, 0)
                 
         self.after(50, self.animate)
 
@@ -86,6 +121,9 @@ class InstallerApp(ctk.CTk):
         self.title("Thunderstorm Billing Setup")
         self.geometry("600x450")
         self.resizable(False, False)
+        
+        # Set main window background strictly to match space so text bounding boxes blend in
+        self.configure(fg_color="#1a1c23")
         
         # Background Animation
         self.bg_canvas = SpaceCanvas(self, width=600, height=450)
@@ -98,55 +136,47 @@ class InstallerApp(ctk.CTk):
         self.create_widgets()
         
     def create_widgets(self):
-        # Sidebar/Accent Frame (Glassmorphism effect simulation)
-        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color="#1e293b")
-        self.sidebar.pack(side="left", fill="y")
+        # Draw a translucent overlay on the canvas for the sidebar area to separate it
+        self.bg_canvas.create_rectangle(0, 0, 180, 450, fill="#13151b", outline="", stipple="gray50")
         
-        # Logo or Icon Placeholder
-        self.logo_label = ctk.CTkLabel(self.sidebar, text="⚡", font=("Arial", 60), fg_color="transparent")
-        self.logo_label.pack(pady=(40, 10))
+        # Sidebar Elements
+        self.logo_label = ctk.CTkLabel(self, text="⚡", font=("Arial", 60), fg_color="transparent")
+        self.logo_label.place(x=90, y=90, anchor="center")
         
-        self.title_label = ctk.CTkLabel(self.sidebar, text="Thunderstorm\nBilling", font=("Arial", 18, "bold"), fg_color="transparent")
-        self.title_label.pack(pady=10)
+        self.title_label = ctk.CTkLabel(self, text="Thunderstorm\nBilling", font=("Arial", 18, "bold"), fg_color="transparent")
+        self.title_label.place(x=90, y=170, anchor="center")
         
-        self.status_label = ctk.CTkLabel(self.sidebar, text="Version 1.0.1", font=("Arial", 11), text_color="gray", fg_color="transparent")
-        self.status_label.pack(side="bottom", pady=20)
+        self.status_label = ctk.CTkLabel(self, text="Version 1.0.2", font=("Arial", 11), text_color="gray", fg_color="transparent")
+        self.status_label.place(x=90, y=410, anchor="center")
         
-        # Main Content area
-        self.main_content = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        self.main_content.pack(side="right", fill="both", expand=True, padx=30, pady=40)
+        # Main Content Elements
+        # Using exact placement to avoid massive frames blocking the background
+        self.title_main = ctk.CTkLabel(self, text="Installation Setup", font=("Arial", 32, "bold"), text_color="white", fg_color="transparent")
+        self.title_main.place(x=220, y=40, anchor="nw")
         
-        ctk.CTkLabel(self.main_content, text="Installation Setup", font=("Arial", 28, "bold"), anchor="w").pack(fill="x", pady=(0, 20))
+        self.choose_label = ctk.CTkLabel(self, text="Choose installation folder:", font=("Arial", 14), text_color="white", fg_color="transparent")
+        self.choose_label.place(x=220, y=120, anchor="nw")
         
-        ctk.CTkLabel(self.main_content, text="Choose installation folder:", font=("Arial", 13), anchor="w").pack(fill="x", pady=(10, 5))
+        self.path_entry = ctk.CTkEntry(self, textvariable=self.install_dir, width=240, fg_color="#22252e", border_color="#333845", text_color="white")
+        self.path_entry.place(x=220, y=150, anchor="nw")
         
-        self.path_frame = ctk.CTkFrame(self.main_content, fg_color="transparent")
-        self.path_frame.pack(fill="x", pady=5)
+        self.browse_btn = ctk.CTkButton(self, text="Browse", width=80, command=self.browse_folder, fg_color="#1d72b8")
+        self.browse_btn.place(x=470, y=150, anchor="nw")
         
-        self.path_entry = ctk.CTkEntry(self.path_frame, textvariable=self.install_dir, width=250)
-        self.path_entry.pack(side="left", padx=(0, 10))
-        
-        self.browse_btn = ctk.CTkButton(self.path_frame, text="Browse", width=80, command=self.browse_folder)
-        self.browse_btn.pack(side="left")
-        
-        self.info_label = ctk.CTkLabel(self.main_content, 
+        self.info_label = ctk.CTkLabel(self, 
                                      text="The setup will install Thunderstorm Billing and create a desktop shortcut for quick access.", 
-                                     wraplength=300, justify="left", font=("Arial", 12), text_color="#cbd5e1")
-        self.info_label.pack(anchor="w", pady=30)
+                                     wraplength=320, justify="left", font=("Arial", 14), text_color="#cbd5e1", fg_color="transparent")
+        self.info_label.place(x=220, y=210, anchor="nw")
         
         # Progress Bar (initially hidden)
-        self.progress = ctk.CTkProgressBar(self.main_content, width=340)
+        self.progress = ctk.CTkProgressBar(self, width=330, fg_color="#22252e", progress_color="#1d72b8")
         self.progress.set(0)
         
-        # Action Buttons
-        self.button_frame = ctk.CTkFrame(self.main_content, fg_color="transparent")
-        self.button_frame.pack(side="bottom", fill="x")
+        self.cancel_btn = ctk.CTkButton(self, text="Cancel", fg_color="#4b5563", width=90, command=self.quit, height=40)
+        self.cancel_btn.place(x=350, y=370, anchor="nw")
         
-        self.install_btn = ctk.CTkButton(self.button_frame, text="Install Now", command=self.start_install, font=("Arial", 13, "bold"), height=35)
-        self.install_btn.pack(side="right")
-        
-        self.cancel_btn = ctk.CTkButton(self.button_frame, text="Cancel", fg_color="#475569", width=90, command=self.quit, height=35)
-        self.cancel_btn.pack(side="right", padx=10)
+        self.install_btn = ctk.CTkButton(self, text="Install Now", command=self.start_install, font=("Arial", 14, "bold"), height=40, fg_color="#1d72b8")
+        self.install_btn.place(x=450, y=370, anchor="nw")
 
     def browse_folder(self):
         folder = filedialog.askdirectory(initialdir=self.install_dir.get())
@@ -166,7 +196,7 @@ class InstallerApp(ctk.CTk):
         self.browse_btn.configure(state="disabled")
         self.path_entry.configure(state="disabled")
         
-        self.progress.pack(pady=10)
+        self.progress.place(x=220, y=290, anchor="nw")
         self.run_installation(target)
 
     def run_installation(self, target_dir):
@@ -205,6 +235,23 @@ class InstallerApp(ctk.CTk):
             self.create_shortcut(target_dir)
             
             messagebox.showinfo("Success", "Thunderstorm Billing has been installed successfully!")
+            
+            # Restart Application
+            try:
+                exe_name = "Thunderstorm Billing.exe"
+                if not getattr(sys, 'frozen', False):
+                    exe_name = "launcher.py" # For dev testing
+                
+                app_path = os.path.join(target_dir, exe_name)
+                if os.path.exists(app_path):
+                    if app_path.endswith(".py"):
+                        subprocess.Popen([sys.executable, app_path], cwd=target_dir)
+                    else:
+                        os.startfile(app_path)
+                    print(f"Restarting app from {app_path}")
+            except Exception as ree:
+                print(f"Failed to restart app: {ree}")
+
             self.destroy()
             
         except Exception as e:
