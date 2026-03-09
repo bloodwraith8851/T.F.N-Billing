@@ -99,7 +99,7 @@ class InstallerApp(ctk.CTk):
         
     def create_widgets(self):
         # Sidebar/Accent Frame (Glassmorphism effect simulation)
-        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=("rgba(30, 41, 59, 0.7)"))
+        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color="#1e293b")
         self.sidebar.pack(side="left", fill="y")
         
         # Logo or Icon Placeholder
