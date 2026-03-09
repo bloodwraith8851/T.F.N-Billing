@@ -156,10 +156,9 @@ def main():
         
     # Check if requirements are installed
     try:
+        import eel
         import reportlab
-        import ttkbootstrap
         import pandas
-        import matplotlib
         import PIL
         logging.info("All required packages are installed")
     except ImportError as e:
@@ -177,13 +176,13 @@ def main():
         logging.info(f"Current directory: {current_dir}")
         logging.info(f"Directory contents: {os.listdir('.')}")
 
-        # Import the main module
-        logging.info("Importing main module")
-        import main
+        # Import the eel module
+        logging.info("Importing app_eel module")
+        import app_eel
         
-        # Create and run the application through the login window
+        # Create and run the application
         logging.info("Starting main application")
-        main.start_application()  # Use start_application instead of login_window
+        app_eel.start_app()
         
     except Exception as e:
         error_msg = f"Failed to start application:\n{str(e)}\n\nDetails:\n"

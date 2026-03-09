@@ -4,5 +4,7 @@ Pillow>=10.0.0
 matplotlib>=3.7.1
 pandas>=2.0.3
 pyinstaller>=6.1.0
+customtkinter>=5.2.2
+packaging>=23.0
 
-# For analytics/dashboard features 
+# For analytics/dashboard features

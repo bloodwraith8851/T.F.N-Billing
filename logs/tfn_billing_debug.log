@@ -2236,3 +2236,302 @@ Traceback (most recent call last):
 AttributeError: 'NoneType' object has no attribute 'mainloop'
 
 2025-06-04 02:00:36,379 - ERROR - [launcher.py:24] - Critical Error: Unhandled exception: 'NoneType' object has no attribute 'mainloop'
+2026-03-07 21:19:34,444 - INFO - [launcher.py:185] - Starting main application
+2026-03-07 21:19:34,445 - INFO - [main.py:434] - Starting application
+2026-03-07 21:19:34,445 - INFO - [main.py:415] - Initializing main application window
+2026-03-07 21:19:34,528 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-07 21:19:34,545 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-07 21:19:34,545 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-07 21:19:34,546 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-07 21:19:34,546 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-07 21:19:34,578 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-07 21:19:34,629 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-07 21:19:34,650 - INFO - [main.py:462] - Showing login window
+2026-03-07 21:19:34,650 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-07 21:19:34,650 - INFO - [main.py:2500] - Creating login window
+2026-03-07 21:19:34,677 - DEBUG - [main.py:2508] - Login window icon set successfully
+2026-03-07 21:19:34,680 - DEBUG - [main.py:2520] - Login window centered on screen
+2026-03-07 21:19:34,734 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-07 21:19:34,734 - INFO - [main.py:466] - Starting main event loop
+2026-03-07 21:19:38,829 - INFO - [main.py:2540] - Login attempt for user: admin
+2026-03-07 21:19:38,831 - WARNING - [main.py:2552] - Failed login attempt for user: admin
+2026-03-07 21:19:40,729 - INFO - [main.py:2540] - Login attempt for user: admin
+2026-03-07 21:19:40,731 - INFO - [main.py:2544] - Successful login for user: admin with role: admin
+2026-03-07 21:19:40,780 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-07 21:19:40,781 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-07 21:19:40,781 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-07 21:19:40,781 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-07 21:19:41,543 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:19:41,543 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:19:41,544 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:19:41,544 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:19:41,585 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-07 21:19:41,589 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-07 21:19:41,589 - DEBUG - [main.py:2848] - Set date from datetime object: 2026-03-07 21:19:41.585620
+2026-03-07 21:19:41,589 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-07 21:19:41,589 - DEBUG - [main.py:2834] - Initialized CustomDateEntry widget
+2026-03-07 21:19:41,589 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-07 21:19:41,590 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-07 21:19:41,591 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-07 21:19:41,591 - DEBUG - [main.py:2848] - Set date from datetime object: 2026-03-07 21:19:41.590902
+2026-03-07 21:19:41,592 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-07 21:19:41,592 - DEBUG - [main.py:2834] - Initialized CustomDateEntry widget
+2026-03-07 21:19:41,592 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-07 21:19:41,620 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:19:41,620 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:19:41,621 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:19:41,621 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:19:57,795 - DEBUG - [main.py:67] - Entering function: autofill_customer_data
+2026-03-07 21:19:57,795 - DEBUG - [main.py:543] - Attempting to autofill customer data
+2026-03-07 21:19:57,795 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:19:57,795 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:19:57,796 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:19:57,796 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:19:57,796 - INFO - [main.py:551] - Autofilling data for customer: TFN001
+2026-03-07 21:19:57,796 - DEBUG - [main.py:556] - Customer data autofill completed
+2026-03-07 21:19:57,797 - DEBUG - [main.py:70] - Exiting function: autofill_customer_data
+2026-03-07 21:19:59,991 - DEBUG - [main.py:67] - Entering function: toggle_theme
+2026-03-07 21:19:59,991 - INFO - [main.py:563] - Toggling theme to: light
+2026-03-07 21:19:59,991 - DEBUG - [main.py:576] - Applying light theme
+2026-03-07 21:20:00,056 - DEBUG - [main.py:587] - Theme update completed
+2026-03-07 21:20:00,056 - DEBUG - [main.py:70] - Exiting function: toggle_theme
+2026-03-07 21:20:00,797 - DEBUG - [main.py:67] - Entering function: toggle_theme
+2026-03-07 21:20:00,797 - INFO - [main.py:563] - Toggling theme to: dark
+2026-03-07 21:20:00,797 - DEBUG - [main.py:567] - Applying dark theme
+2026-03-07 21:20:00,844 - DEBUG - [main.py:587] - Theme update completed
+2026-03-07 21:20:00,844 - DEBUG - [main.py:70] - Exiting function: toggle_theme
+2026-03-07 21:20:01,321 - DEBUG - [main.py:67] - Entering function: toggle_theme
+2026-03-07 21:20:01,321 - INFO - [main.py:563] - Toggling theme to: light
+2026-03-07 21:20:01,322 - DEBUG - [main.py:576] - Applying light theme
+2026-03-07 21:20:01,426 - DEBUG - [main.py:587] - Theme update completed
+2026-03-07 21:20:01,426 - DEBUG - [main.py:70] - Exiting function: toggle_theme
+2026-03-07 21:20:01,588 - DEBUG - [main.py:67] - Entering function: toggle_theme
+2026-03-07 21:20:01,589 - INFO - [main.py:563] - Toggling theme to: dark
+2026-03-07 21:20:01,589 - DEBUG - [main.py:567] - Applying dark theme
+2026-03-07 21:20:01,643 - DEBUG - [main.py:587] - Theme update completed
+2026-03-07 21:20:01,643 - DEBUG - [main.py:70] - Exiting function: toggle_theme
+2026-03-07 21:20:09,895 - DEBUG - [main.py:67] - Entering function: autofill_customer_data
+2026-03-07 21:20:09,895 - DEBUG - [main.py:543] - Attempting to autofill customer data
+2026-03-07 21:20:09,895 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:20:09,895 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:20:09,896 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:20:09,896 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:20:09,896 - INFO - [main.py:551] - Autofilling data for customer: TFN001
+2026-03-07 21:20:09,896 - DEBUG - [main.py:556] - Customer data autofill completed
+2026-03-07 21:20:09,897 - DEBUG - [main.py:70] - Exiting function: autofill_customer_data
+2026-03-07 21:20:10,722 - DEBUG - [main.py:67] - Entering function: autofill_customer_data
+2026-03-07 21:20:10,723 - DEBUG - [main.py:543] - Attempting to autofill customer data
+2026-03-07 21:20:10,723 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:20:10,723 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:20:10,724 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:20:10,724 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:20:10,724 - INFO - [main.py:551] - Autofilling data for customer: TFN001
+2026-03-07 21:20:10,725 - DEBUG - [main.py:556] - Customer data autofill completed
+2026-03-07 21:20:10,725 - DEBUG - [main.py:70] - Exiting function: autofill_customer_data
+2026-03-07 21:20:36,110 - INFO - [main.py:434] - Starting application
+2026-03-07 21:20:36,110 - INFO - [main.py:415] - Initializing main application window
+2026-03-07 21:20:36,226 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-07 21:20:36,238 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-07 21:20:36,239 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-07 21:20:36,239 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-07 21:20:36,239 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-07 21:20:36,281 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-07 21:20:36,334 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-07 21:20:36,346 - INFO - [main.py:462] - Showing login window
+2026-03-07 21:20:36,346 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-07 21:20:36,347 - INFO - [main.py:2500] - Creating login window
+2026-03-07 21:20:36,374 - DEBUG - [main.py:2508] - Login window icon set successfully
+2026-03-07 21:20:36,375 - DEBUG - [main.py:2520] - Login window centered on screen
+2026-03-07 21:20:36,396 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-07 21:20:36,397 - INFO - [main.py:466] - Starting main event loop
+2026-03-07 21:27:08,281 - INFO - [launcher.py:185] - Starting main application
+2026-03-07 21:27:08,281 - INFO - [main.py:434] - Starting application
+2026-03-07 21:27:08,282 - INFO - [main.py:415] - Initializing main application window
+2026-03-07 21:27:08,355 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-07 21:27:08,362 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-07 21:27:08,362 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-07 21:27:08,363 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-07 21:27:08,363 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-07 21:27:08,397 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-07 21:27:08,442 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-07 21:27:08,451 - INFO - [main.py:462] - Showing login window
+2026-03-07 21:27:08,451 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-07 21:27:08,451 - INFO - [main.py:2503] - Creating login window
+2026-03-07 21:27:08,465 - DEBUG - [main.py:2511] - Login window icon set successfully
+2026-03-07 21:27:08,465 - DEBUG - [main.py:2523] - Login window centered on screen
+2026-03-07 21:27:08,495 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-07 21:27:08,495 - INFO - [main.py:466] - Starting main event loop
+2026-03-07 21:27:14,776 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-07 21:27:14,777 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-07 21:27:17,632 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-07 21:27:17,634 - INFO - [main.py:2547] - Successful login for user: admin with role: admin
+2026-03-07 21:27:17,684 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-07 21:27:17,685 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-07 21:27:17,685 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-07 21:27:17,685 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-07 21:27:18,171 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-07 21:27:18,171 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-07 21:27:18,171 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-07 21:27:18,171 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-07 21:27:18,211 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-07 21:27:18,214 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-07 21:27:18,214 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-07 21:27:18.211460
+2026-03-07 21:27:18,214 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-07 21:27:18,214 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-07 21:27:18,214 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-07 21:27:18,216 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-07 21:27:18,217 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-07 21:27:18,218 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-07 21:27:18.216330
+2026-03-07 21:27:18,218 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-07 21:27:18,218 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-07 21:27:18,218 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-07 21:27:21,163 - DEBUG - [main.py:67] - Entering function: toggle_theme
+2026-03-07 21:27:21,163 - INFO - [main.py:563] - Toggling theme to: light
+2026-03-07 21:27:21,163 - DEBUG - [main.py:576] - Applying light theme
+2026-03-07 21:27:21,205 - DEBUG - [main.py:587] - Theme update completed
+2026-03-07 21:27:21,205 - DEBUG - [main.py:70] - Exiting function: toggle_theme
+2026-03-08 13:47:40,917 - INFO - [launcher.py:185] - Starting main application
+2026-03-08 13:47:40,917 - INFO - [main.py:434] - Starting application
+2026-03-08 13:47:40,918 - INFO - [main.py:415] - Initializing main application window
+2026-03-08 13:47:41,682 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-08 13:47:41,699 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 13:47:41,699 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 13:47:41,700 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 13:47:41,700 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 13:47:41,732 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-08 13:47:41,781 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-08 13:47:41,795 - INFO - [main.py:462] - Showing login window
+2026-03-08 13:47:41,795 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-08 13:47:41,796 - INFO - [main.py:2503] - Creating login window
+2026-03-08 13:47:41,823 - DEBUG - [main.py:2511] - Login window icon set successfully
+2026-03-08 13:47:41,824 - DEBUG - [main.py:2523] - Login window centered on screen
+2026-03-08 13:47:41,849 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-08 13:47:41,850 - INFO - [main.py:466] - Starting main event loop
+2026-03-08 13:47:47,765 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 13:47:47,767 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-08 13:47:51,406 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 13:47:51,406 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-08 13:47:51,407 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 13:47:51,407 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-08 13:47:55,385 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 13:47:55,386 - INFO - [main.py:2547] - Successful login for user: admin with role: admin
+2026-03-08 13:47:55,445 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 13:47:55,446 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 13:47:55,446 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 13:47:55,446 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 13:47:56,173 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-08 13:47:56,173 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-08 13:47:56,173 - DEBUG - [main.py:293] - Loaded 1 customers
+2026-03-08 13:47:56,173 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-08 13:47:56,221 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 13:47:56,225 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 13:47:56,225 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 13:47:56.221477
+2026-03-08 13:47:56,226 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 13:47:56,226 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 13:47:56,226 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-08 13:47:56,228 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 13:47:56,230 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 13:47:56,230 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 13:47:56.228422
+2026-03-08 13:47:56,230 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 13:47:56,230 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 13:47:56,230 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-08 22:24:59,775 - INFO - [launcher.py:185] - Starting main application
+2026-03-08 22:24:59,776 - INFO - [main.py:434] - Starting application
+2026-03-08 22:24:59,776 - INFO - [main.py:415] - Initializing main application window
+2026-03-08 22:25:00,231 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-08 22:25:00,242 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 22:25:00,242 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 22:25:00,242 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 22:25:00,242 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 22:25:00,268 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-08 22:25:00,314 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-08 22:25:00,337 - INFO - [main.py:462] - Showing login window
+2026-03-08 22:25:00,338 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-08 22:25:00,338 - INFO - [main.py:2503] - Creating login window
+2026-03-08 22:25:00,364 - DEBUG - [main.py:2511] - Login window icon set successfully
+2026-03-08 22:25:00,364 - DEBUG - [main.py:2523] - Login window centered on screen
+2026-03-08 22:25:00,386 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-08 22:25:00,387 - INFO - [main.py:466] - Starting main event loop
+2026-03-08 22:25:04,908 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 22:25:04,910 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-08 22:25:06,621 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 22:25:06,622 - INFO - [main.py:2547] - Successful login for user: admin with role: admin
+2026-03-08 22:25:06,673 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 22:25:06,673 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 22:25:06,673 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 22:25:06,674 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 22:25:07,423 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-08 22:25:07,423 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-08 22:25:07,424 - DEBUG - [main.py:293] - Loaded 2 customers
+2026-03-08 22:25:07,424 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-08 22:25:07,473 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 22:25:07,478 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 22:25:07,478 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 22:25:07.473724
+2026-03-08 22:25:07,478 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 22:25:07,478 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 22:25:07,478 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-08 22:25:07,479 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 22:25:07,481 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 22:25:07,481 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 22:25:07.480055
+2026-03-08 22:25:07,481 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 22:25:07,481 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 22:25:07,481 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-08 22:25:32,090 - INFO - [launcher.py:185] - Starting main application
+2026-03-08 22:25:32,090 - INFO - [main.py:434] - Starting application
+2026-03-08 22:25:32,091 - INFO - [main.py:415] - Initializing main application window
+2026-03-08 22:25:32,196 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-08 22:25:32,207 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 22:25:32,207 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 22:25:32,207 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 22:25:32,207 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 22:25:32,239 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-08 22:25:32,287 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-08 22:25:32,301 - INFO - [main.py:462] - Showing login window
+2026-03-08 22:25:32,302 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-08 22:25:32,302 - INFO - [main.py:2503] - Creating login window
+2026-03-08 22:25:32,325 - DEBUG - [main.py:2511] - Login window icon set successfully
+2026-03-08 22:25:32,326 - DEBUG - [main.py:2523] - Login window centered on screen
+2026-03-08 22:25:32,356 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-08 22:25:32,356 - INFO - [main.py:466] - Starting main event loop
+2026-03-08 22:26:02,950 - INFO - [main.py:2572] - Application closed from login window
+2026-03-08 22:27:18,777 - INFO - [launcher.py:185] - Starting main application
+2026-03-08 22:27:18,777 - INFO - [main.py:434] - Starting application
+2026-03-08 22:27:18,778 - INFO - [main.py:415] - Initializing main application window
+2026-03-08 22:27:18,873 - INFO - [main.py:425] - Created output_invoices directory
+2026-03-08 22:27:18,881 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 22:27:18,882 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 22:27:18,882 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 22:27:18,882 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 22:27:18,914 - INFO - [main.py:447] - Successfully set app icon from PNG
+2026-03-08 22:27:18,965 - INFO - [main.py:454] - Successfully set app icon from ICO
+2026-03-08 22:27:18,975 - INFO - [main.py:462] - Showing login window
+2026-03-08 22:27:18,976 - DEBUG - [main.py:67] - Entering function: login_window
+2026-03-08 22:27:18,976 - INFO - [main.py:2503] - Creating login window
+2026-03-08 22:27:19,007 - DEBUG - [main.py:2511] - Login window icon set successfully
+2026-03-08 22:27:19,007 - DEBUG - [main.py:2523] - Login window centered on screen
+2026-03-08 22:27:19,024 - DEBUG - [main.py:70] - Exiting function: login_window
+2026-03-08 22:27:19,024 - INFO - [main.py:466] - Starting main event loop
+2026-03-08 22:27:22,096 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 22:27:22,097 - WARNING - [main.py:2555] - Failed login attempt for user: admin
+2026-03-08 22:27:23,740 - INFO - [main.py:2543] - Login attempt for user: admin
+2026-03-08 22:27:23,740 - INFO - [main.py:2547] - Successful login for user: admin with role: admin
+2026-03-08 22:27:23,793 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IHDR' 16 13
+2026-03-08 22:27:23,793 - DEBUG - [PngImagePlugin.py:204] - STREAM b'PLTE' 41 108
+2026-03-08 22:27:23,793 - DEBUG - [PngImagePlugin.py:204] - STREAM b'tRNS' 161 35
+2026-03-08 22:27:23,793 - DEBUG - [PngImagePlugin.py:204] - STREAM b'IDAT' 208 5693
+2026-03-08 22:27:24,318 - DEBUG - [main.py:67] - Entering function: load_customers
+2026-03-08 22:27:24,318 - DEBUG - [main.py:289] - Loading customers from: customers.json
+2026-03-08 22:27:24,319 - DEBUG - [main.py:293] - Loaded 2 customers
+2026-03-08 22:27:24,319 - DEBUG - [main.py:70] - Exiting function: load_customers
+2026-03-08 22:27:24,355 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 22:27:24,358 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 22:27:24,358 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 22:27:24.355434
+2026-03-08 22:27:24,358 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 22:27:24,358 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 22:27:24,358 - DEBUG - [main.py:70] - Exiting function: __init__
+2026-03-08 22:27:24,359 - DEBUG - [main.py:67] - Entering function: __init__
+2026-03-08 22:27:24,360 - DEBUG - [main.py:67] - Entering function: set_date
+2026-03-08 22:27:24,360 - DEBUG - [main.py:2851] - Set date from datetime object: 2026-03-08 22:27:24.359616
+2026-03-08 22:27:24,360 - DEBUG - [main.py:70] - Exiting function: set_date
+2026-03-08 22:27:24,360 - DEBUG - [main.py:2837] - Initialized CustomDateEntry widget
+2026-03-08 22:27:24,360 - DEBUG - [main.py:70] - Exiting function: __init__

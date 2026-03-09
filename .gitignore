@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script, and contain the binage and data for an executable
+*.manifest
+*.spec
+
+# Installer files
+Thunderstorm_Billing_Setup.exe
+
+# Data files (Exclude local databases/logs)
+output_invoices/
+customers.json
+invoice_log.json
+invoice_tracker.json
+*.log
+*.bak
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
