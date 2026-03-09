@@ -1,60 +1,79 @@
 import os
 import sys
 import shutil
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
 from win32com.client import Dispatch
+from PIL import Image
 
-class InstallerApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Thunderstorm Billing Setup")
-        self.root.geometry("500x350")
-        self.root.resizable(False, False)
+# Set appearance and theme
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
+
+class InstallerApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
         
-        # Style
-        self.style = ttk.Style()
-        self.style.configure("TButton", padding=6)
+        self.title("Thunderstorm Billing Setup")
+        self.geometry("600x450")
+        self.resizable(False, False)
         
         # Variables
-        self.install_dir = tk.StringVar(value=os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Thunderstorm Billing"))
+        default_path = os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Thunderstorm Billing")
+        self.install_dir = ctk.StringVar(value=default_path)
         
         self.create_widgets()
         
     def create_widgets(self):
-        # Header
-        header_frame = tk.Frame(self.root, bg="#4A6CFA", height=80)
-        header_frame.pack(fill="x")
-        header_frame.pack_propagate(False)
+        # Sidebar/Accent Frame
+        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar.pack(side="left", fill="y")
         
-        tk.Label(header_frame, text="Thunderstorm Billing Setup", bg="#4A6CFA", fg="white", font=("Arial", 16, "bold")).pack(pady=20)
+        # Logo or Icon Placeholder
+        self.logo_label = ctk.CTkLabel(self.sidebar, text="⚡", font=("Arial", 60))
+        self.logo_label.pack(pady=(40, 10))
         
-        # Content
-        content_frame = ttk.Frame(self.root, padding=20)
-        content_frame.pack(fill="both", expand=True)
+        self.title_label = ctk.CTkLabel(self.sidebar, text="Thunderstorm\nBilling", font=("Arial", 18, "bold"))
+        self.title_label.pack(pady=10)
         
-        tk.Label(content_frame, text="Select Installation Folder:", font=("Arial", 10)).pack(anchor="w", pady=(10, 5))
+        self.status_label = ctk.CTkLabel(self.sidebar, text="Version 1.0.0", font=("Arial", 11), text_color="gray")
+        self.status_label.pack(side="bottom", pady=20)
         
-        path_frame = tk.Frame(content_frame)
-        path_frame.pack(fill="x")
+        # Main Content area
+        self.main_content = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.main_content.pack(side="right", fill="both", expand=True, padx=30, pady=40)
         
-        tk.Entry(path_frame, textvariable=self.install_dir, width=40).pack(side="left", padx=(0, 10))
-        tk.Button(path_frame, text="Browse...", command=self.browse_folder).pack(side="left")
+        ctk.CTkLabel(self.main_content, text="Installation Setup", font=("Arial", 24, "bold"), anchor="w").pack(fill="x", pady=(0, 20))
         
-        tk.Label(content_frame, text="The installer will copy all necessary files and create a desktop shortcut.", wraplength=450, justify="left").pack(anchor="w", pady=20)
+        ctk.CTkLabel(self.main_content, text="Choose installation folder:", font=("Arial", 13), anchor="w").pack(fill="x", pady=(10, 5))
         
-        # Progress Bar
-        self.progress = ttk.Progressbar(content_frame, orient="horizontal", length=450, mode="determinate")
-        self.progress.pack(pady=(0, 20))
+        self.path_frame = ctk.CTkFrame(self.main_content, fg_color="transparent")
+        self.path_frame.pack(fill="x", pady=5)
         
-        # Footer
-        footer_frame = tk.Frame(self.root)
-        footer_frame.pack(fill="x", side="bottom", pady=20)
+        self.path_entry = ctk.CTkEntry(self.path_frame, textvariable=self.install_dir, width=250)
+        self.path_entry.pack(side="left", padx=(0, 10))
         
-        self.install_btn = tk.Button(footer_frame, text="Install Now", bg="#4A6CFA", fg="white", font=("Arial", 10, "bold"), width=15, command=self.start_install)
-        self.install_btn.pack(side="right", padx=20)
+        self.browse_btn = ctk.CTkButton(self.path_frame, text="Browse", width=80, command=self.browse_folder)
+        self.browse_btn.pack(side="left")
         
-        tk.Button(footer_frame, text="Cancel", width=10, command=self.root.quit).pack(side="right")
+        self.info_label = ctk.CTkLabel(self.main_content, 
+                                     text="The setup will install Thunderstorm Billing and create a desktop shortcut for quick access.", 
+                                     wraplength=300, justify="left", font=("Arial", 12), text_color="gray")
+        self.info_label.pack(anchor="w", pady=30)
+        
+        # Progress Bar (initially hidden)
+        self.progress = ctk.CTkProgressBar(self.main_content, width=340)
+        self.progress.set(0)
+        
+        # Action Buttons
+        self.button_frame = ctk.CTkFrame(self.main_content, fg_color="transparent")
+        self.button_frame.pack(side="bottom", fill="x")
+        
+        self.install_btn = ctk.CTkButton(self.button_frame, text="Install Now", command=self.start_install, font=("Arial", 13, "bold"), height=35)
+        self.install_btn.pack(side="right")
+        
+        self.cancel_btn = ctk.CTkButton(self.button_frame, text="Cancel", fg_color="gray", width=90, command=self.quit, height=35)
+        self.cancel_btn.pack(side="right", padx=10)
 
     def browse_folder(self):
         folder = filedialog.askdirectory(initialdir=self.install_dir.get())
@@ -70,21 +89,23 @@ class InstallerApp:
                 messagebox.showerror("Error", f"Could not create directory: {e}")
                 return
         
-        self.install_btn.config(state="disabled")
+        self.install_btn.configure(state="disabled")
+        self.browse_btn.configure(state="disabled")
+        self.path_entry.configure(state="disabled")
+        
+        self.progress.pack(pady=10)
         self.run_installation(target)
 
     def run_installation(self, target_dir):
         try:
-            # Source folder (where the app files are - usually same dir as this setup or bundled)
+            # Source folder (where the app files are)
             if getattr(sys, 'frozen', False):
-                # The build script adds data as 'Thunderstorm Billing' folder
                 source_dir = os.path.join(sys._MEIPASS, "Thunderstorm Billing")
                 if not os.path.exists(source_dir):
                     source_dir = sys._MEIPASS
             else:
-                source_dir = r"d:\T.F.N Billing\dist\Thunderstorm Billing" # For testing in dev
+                source_dir = r"d:\T.F.N Billing\dist\Thunderstorm Billing"
             
-            # Simple simulation of file copying
             files_to_copy = []
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
@@ -92,32 +113,30 @@ class InstallerApp:
             
             total_files = len(files_to_copy)
             if total_files == 0:
-                # If no files in dist, try parent dir for dev testing
+                # Fallback for dev testing if dist is empty
                 source_dir = r"d:\T.F.N Billing"
                 files_to_copy = [f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))]
                 total_files = len(files_to_copy)
 
             for i, src_file in enumerate(files_to_copy):
                 # Update progress
-                self.progress['value'] = (i + 1) / total_files * 100
-                self.root.update_idletasks()
+                self.progress.set((i + 1) / total_files)
+                self.update_idletasks()
                 
-                # Copying logic
                 rel_path = os.path.relpath(src_file, source_dir)
                 dest_path = os.path.join(target_dir, rel_path)
                 
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 shutil.copy2(src_file, dest_path)
             
-            # Create Shortcut
             self.create_shortcut(target_dir)
             
             messagebox.showinfo("Success", "Thunderstorm Billing has been installed successfully!")
-            self.root.destroy()
+            self.destroy()
             
         except Exception as e:
             messagebox.showerror("Installation Failed", str(e))
-            self.install_btn.config(state="normal")
+            self.install_btn.configure(state="normal")
 
     def create_shortcut(self, target_dir):
         try:
@@ -135,9 +154,7 @@ class InstallerApp:
             shortcut.save()
         except Exception as e:
             print(f"Non-critical error creating shortcut: {e}")
-            # We don't want to fail the whole install for just a shortcut
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = InstallerApp(root)
-    root.mainloop()
+    app = InstallerApp()
+    app.mainloop()
