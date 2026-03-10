@@ -102,7 +102,27 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) { console.error('Could not parse customer data:', err); }
         });
     }
+
+    // Wire the log search and status filter
+    const logSearch = document.getElementById('log-search');
+    const logFilter = document.getElementById('log-status-filter');
+    if (logSearch) logSearch.addEventListener('input', filterLogs);
+    if (logFilter) logFilter.addEventListener('change', filterLogs);
 });
+
+// Filter Invoice History table by search text and/or status
+function filterLogs() {
+    const query = (document.getElementById('log-search')?.value || '').toLowerCase();
+    const status = (document.getElementById('log-status-filter')?.value || 'All');
+    const rows = document.querySelectorAll('#logs-tbody tr');
+    rows.forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        const matchSearch = !query || text.includes(query);
+        const matchStatus = status === 'All' || text.includes(status.toLowerCase());
+        tr.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
 
 // Calculate total natively based on dropdown
 function calculateTotal() {
@@ -145,6 +165,7 @@ function initNavigation() {
         if (viewId === 'dashboard') loadDashboard();
         if (viewId === 'customers') loadCustomers();
         if (viewId === 'logs') loadHistory();
+        if (viewId === 'settings') loadSettings();
 
         // Animate the sidebar indicator pill
         updateSidebarIndicator(viewId);
@@ -214,9 +235,7 @@ async function sendWhatsApp(phoneNum, customerName, amount, invoiceNum, filename
     }
 }
 
-// Initial loads
-loadCustomers();
-loadHistory();
+// Initial loads happen inside DOMContentLoaded above
 
 // Data Loading via EEL (Python Bridge)
 async function loadDashboard() {
@@ -369,6 +388,13 @@ async function handleInvoiceSubmit(e) {
         if (response.status === 'success') {
             showToast('success', 'ri-check-circle-line', response.message);
             document.getElementById('invoiceForm').reset();
+            // Reset flatpickr date pickers too so they stay in sync
+            if (window.flatpickr) {
+                const fpFrom = document.querySelector('#inv-billing_from')._flatpickr;
+                const fpTo = document.querySelector('#inv-billing_to')._flatpickr;
+                if (fpFrom) fpFrom.setDate(new Date(), true);
+                if (fpTo) { const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); fpTo.setDate(nextMonth, true); }
+            }
             window.switchView('dashboard');
         } else {
             showToast('error', 'ri-error-warning-line', 'Error: ' + response.message);
@@ -622,6 +648,65 @@ function startClock() {
     setInterval(tick, 1000);
 }
 startClock();
+
+// ==================== SETTINGS ====================
+async function loadSettings() {
+    try {
+        const s = await eel.get_settings()();
+        document.getElementById('s-company_name').value = s.company_name || '';
+        document.getElementById('s-company_address').value = s.company_address || '';
+        document.getElementById('s-company_gstin').value = s.company_gstin || '';
+        document.getElementById('s-company_phone').value = s.company_phone || '';
+        document.getElementById('s-company_email').value = s.company_email || '';
+        document.getElementById('s-place_of_supply').value = s.place_of_supply || '';
+        document.getElementById('s-gst_rate').value = s.gst_rate ?? 9;
+        document.getElementById('s-invoice_prefix').value = s.invoice_prefix || '';
+
+        // Load version
+        const ver = await eel.get_version()();
+        const vEl = document.getElementById('s-version');
+        if (vEl) vEl.textContent = ver;
+    } catch (e) {
+        console.error('Failed to load settings:', e);
+    }
+}
+
+async function saveSettings() {
+    const data = {
+        company_name: document.getElementById('s-company_name').value.trim(),
+        company_address: document.getElementById('s-company_address').value.trim(),
+        company_gstin: document.getElementById('s-company_gstin').value.trim(),
+        company_phone: document.getElementById('s-company_phone').value.trim(),
+        company_email: document.getElementById('s-company_email').value.trim(),
+        place_of_supply: document.getElementById('s-place_of_supply').value.trim(),
+        gst_rate: parseFloat(document.getElementById('s-gst_rate').value) || 9.0,
+        invoice_prefix: document.getElementById('s-invoice_prefix').value.trim(),
+    };
+    try {
+        const res = await eel.save_settings_data(data)();
+        if (res.status === 'success') {
+            showToast('success', 'ri-check-circle-line', 'Settings saved successfully!');
+        } else {
+            showToast('error', 'ri-error-warning-line', 'Error: ' + res.message);
+        }
+    } catch (e) {
+        showToast('error', 'ri-error-warning-line', 'Failed to save settings.');
+    }
+}
+
+async function doResetCounter() {
+    if (!confirm('Reset invoice counter to #2059? This cannot be undone.')) return;
+    try {
+        const res = await eel.reset_invoice_counter()();
+        if (res.status === 'success') {
+            showToast('success', 'ri-refresh-line', res.message);
+        } else {
+            showToast('error', 'ri-error-warning-line', res.message);
+        }
+    } catch (e) {
+        showToast('error', 'ri-error-warning-line', 'Failed to reset counter.');
+    }
+}
 
 // ==================== SIDEBAR INDICATOR ====================
 function updateSidebarIndicator(viewId) {

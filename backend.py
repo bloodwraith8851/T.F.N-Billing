@@ -1,22 +1,19 @@
 import os
+import sys
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import traceback
 import logging
 
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import smtplib
-from email.message import EmailMessage
 
 # For PDF Generation
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image, Flowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm, inch
+from reportlab.lib.units import mm
 from reportlab.lib.enums import TA_CENTER
 import PIL.Image
 
@@ -28,8 +25,32 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Constants and configurations
-LOGO_PATH = "assets/logo.png"
-ICO_PATH = "assets/logo.ico"
+def get_asset_path(filename):
+    """
+    Look for asset dynamically at call time.
+    Checks execution directory first (so user can override),
+    then falls back to the bundled _MEIPASS directory (PyInstaller build).
+    """
+    local_path = os.path.join("assets", filename)
+    if os.path.exists(local_path):
+        return local_path
+    try:
+        bundled_path = os.path.join(sys._MEIPASS, "assets", filename)
+        if os.path.exists(bundled_path):
+            return bundled_path
+    except Exception:
+        pass
+    return local_path
+
+# Use properties resolved dynamically at access-time for safety
+def _logo_path():
+    return get_asset_path("logo.png")
+
+def _ico_path():
+    return get_asset_path("logo.ico")
+
+LOGO_PATH = get_asset_path("logo.png")
+ICO_PATH = get_asset_path("logo.ico")
 GST_RATE = 0.09  # 9% GST
 PLANS = [
     "100 MBPS UNL",
@@ -44,6 +65,41 @@ TRACKER_FILE = "invoice_tracker.json"
 INVOICE_LOG_FILE = "invoice_log.json"
 CUSTOMERS_FILE = "customers.json"
 USERS_FILE = "users.json"
+SETTINGS_FILE = "settings.json"
+
+DEFAULT_SETTINGS = {
+    "company_name": "THUNDERSTORM FIBERNET",
+    "company_address": "D-2/539, Shiv Durga Vihar, Lakkarpur, Faridabad, HR - 121009",
+    "company_gstin": "06DJVPP9834G1ZD",
+    "company_phone": "8585986890",
+    "company_email": "thunderstromfibernet@gmail.com",
+    "gst_rate": 9.0,
+    "invoice_prefix": "TF/25-26/HR/",
+    "place_of_supply": "Haryana"
+}
+
+def load_settings():
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r') as f:
+                content = f.read().strip()
+                if content:
+                    data = json.loads(content)
+                    # Merge with defaults so new keys are always present
+                    return {**DEFAULT_SETTINGS, **data}
+        return dict(DEFAULT_SETTINGS)
+    except Exception as e:
+        logger.error(f"Error loading settings: {str(e)}")
+        return dict(DEFAULT_SETTINGS)
+
+def save_settings(data):
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving settings: {str(e)}")
+        raise
 
 
 def initialize_tracker():
@@ -124,10 +180,12 @@ def save_logs(logs):
         json.dump(logs, f, indent=2)
 
 def check_logo():
-    if not os.path.exists(LOGO_PATH):
+    """Dynamically resolve logo path each call so build-version path changes are handled."""
+    path = _logo_path()
+    if not os.path.exists(path):
         return False
     try:
-        with PIL.Image.open(LOGO_PATH) as img:
+        with PIL.Image.open(path) as img:
             if img.format != 'PNG':
                 return False
             return True
@@ -148,7 +206,7 @@ class Watermark(Flowable):
             self.canv.setFillAlpha(self.opacity)
             page_width, page_height = A4
             x = (page_width - self.width) / 2
-            y = (page_height - self.height) / 2 + (page_height * 0.1)
+            y = (page_height - self.height) / 2  # Center it vertically
             self.canv.translate(x, y)
             # Use mask='auto' to respect PNG transparency, preventing the grey box issue
             self.canv.drawImage(self.logo_path, 0, 0, self.width, self.height, mask='auto')
@@ -156,13 +214,16 @@ class Watermark(Flowable):
 
 def draw_watermark(canvas, doc):
     if check_logo():
-        watermark = Watermark(LOGO_PATH, width=150*mm, height=150*mm, opacity=0.08)
+        watermark = Watermark(_logo_path(), width=150*mm, height=150*mm, opacity=0.08)
         watermark.canv = canvas
         watermark.draw()
 
 def generate_pdf(data):
     try:
-        invoice_number = f"TF/25-26/HR/{data['invoice_num']}"
+        cfg = load_settings()
+        gst_rate = float(cfg.get('gst_rate', 9.0)) / 100.0
+        invoice_prefix = cfg.get('invoice_prefix', 'TF/25-26/HR/')
+        invoice_number = f"{invoice_prefix}{data['invoice_num']}"
         filename = f"output_invoices/{data['pdf_filename']}"
         os.makedirs('output_invoices', exist_ok=True)
         
@@ -178,7 +239,7 @@ def generate_pdf(data):
 
         if check_logo():
             try:
-                logo = Image(LOGO_PATH, width=30*mm, height=30*mm)
+                logo = Image(_logo_path(), width=30*mm, height=30*mm)
                 logo.hAlign = 'CENTER'
                 elements.append(logo)
             except Exception as e:
@@ -189,13 +250,13 @@ def generate_pdf(data):
         elements.append(Paragraph("(Original for recipient)", centered_small))
         elements.append(Spacer(1, 12))
 
-        elements.append(Paragraph("<b>THUNDERSTORM FIBERNET</b>", centered))
-        elements.append(Paragraph("Supplier Address: D-2/539, Shiv Durga Vihar, Lakkarpur, Faridabad, HR - 121009", centered_small))
+        elements.append(Paragraph(f"<b>{cfg['company_name']}</b>", centered))
+        elements.append(Paragraph(f"Supplier Address: {cfg['company_address']}", centered_small))
         
         contact_info = (
-            f"Supplier GSTIN: 06DJVPP9834G1ZD &nbsp;&nbsp;&nbsp;&nbsp; "
-            f"Phone No: 8585986890 &nbsp;&nbsp;&nbsp;&nbsp; "
-            f"Email: thunderstromfibernet@gmail.com"
+            f"Supplier GSTIN: {cfg['company_gstin']} &nbsp;&nbsp;&nbsp;&nbsp; "
+            f"Phone No: {cfg['company_phone']} &nbsp;&nbsp;&nbsp;&nbsp; "
+            f"Email: {cfg['company_email']}"
         )
         elements.append(Paragraph(contact_info, centered_small))
         elements.append(Spacer(1, 20))
@@ -204,7 +265,7 @@ def generate_pdf(data):
             [
                 Paragraph(
                     f"Customer Address: {data['customer_address']}<br/>"
-                    f"Place of Supply: Haryana<br/>"
+                    f"Place of Supply: {cfg['place_of_supply']}<br/>"
                     f"Customer GSTIN: {data.get('customer_gstin', '')}",
                     styleN
                 ),
@@ -223,14 +284,16 @@ def generate_pdf(data):
         elements.append(info_table)
         elements.append(Spacer(1, 12))
 
-        base_amount, gst = calculate_amounts(float(data['total_amount']))
+        base_amount = round(float(data['total_amount']) / (1 + 2 * gst_rate), 2)
+        gst = round(base_amount * gst_rate, 2)
         discount = float(data.get('discount', 0) or 0)
         late_fee = float(data.get('late_fee', 0) or 0)
         total = float(data['total_amount']) - discount + late_fee
+        gst_pct_str = f"{gst_rate * 100:.1f}%"
 
         table_data = [
             ["S.No", "Particular", "HSN/SAC", "Amount", "Rate", "CGST", "SGST", "Total"],
-            ["1", f"{data['plan']} - {data['months']} Month{'s' if data['months'] != '1' else ''}", "998422", f"Rs. {base_amount:.2f}", "9.0%", f"Rs. {gst:.2f}", f"Rs. {gst:.2f}", f"Rs. {float(data['total_amount']):.2f}"],
+            ["1", f"{data['plan']} - {data['months']} Month{'s' if data['months'] != '1' else ''}", "998422", f"Rs. {base_amount:.2f}", gst_pct_str, f"Rs. {gst:.2f}", f"Rs. {gst:.2f}", f"Rs. {float(data['total_amount']):.2f}"],
         ]
         if discount:
             table_data.append(["", "Discount", "", "", "", "", "", f"-Rs. {discount:.2f}"])
@@ -238,27 +301,34 @@ def generate_pdf(data):
             table_data.append(["", "Late Fee", "", "", "", "", "", f"+Rs. {late_fee:.2f}"])
         table_data.append(["", "Total Invoice Amount", "", "", "", "", "", f"Rs. {total:.2f}"])
         
+        # Calculate the last row index dynamically (handles optional discount/late_fee rows)
+        last_row = len(table_data) - 1
+
         table = Table(table_data, colWidths=[30, 120, 60, 60, 40, 60, 60, 70])
         table.setStyle(TableStyle([
+            # Header row
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1976d2')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#e3f2fd')),
-            ('ALIGN', (0, 1), (0, 1), 'CENTER'),
-            ('ALIGN', (1, 1), (1, 1), 'LEFT'),  
-            ('FONTSIZE', (1, 1), (1, 1), 8),    
-            ('FONTSIZE', (0, 1), (0, 1), 9),    
-            ('FONTSIZE', (2, 1), (-1, 1), 9),   
-            ('ALIGN', (2, 1), (-1, 1), 'CENTER'),
-            ('BACKGROUND', (0, 2), (-2, 2), colors.HexColor('#ffe082')),
-            ('SPAN', (1, 2), (6, 2)),
-            ('ALIGN', (1, 2), (6, 2), 'LEFT'),
-            ('ALIGN', (7, 2), (7, 2), 'RIGHT'),
-            ('FONTNAME', (1, 2), (1, 2), 'Helvetica-Bold'),
-            ('FONTNAME', (7, 2), (7, 2), 'Helvetica-Bold'),
+            # Data rows (all rows except header and total)
+            ('BACKGROUND', (0, 1), (-1, last_row - 1), colors.HexColor('#e3f2fd')),
+            ('ALIGN', (0, 1), (0, last_row - 1), 'CENTER'),
+            ('ALIGN', (1, 1), (1, last_row - 1), 'LEFT'),
+            ('FONTSIZE', (1, 1), (1, last_row - 1), 8),
+            ('FONTSIZE', (0, 1), (0, last_row - 1), 9),
+            ('FONTSIZE', (2, 1), (-1, last_row - 1), 9),
+            ('ALIGN', (2, 1), (-1, last_row - 1), 'CENTER'),
+            # Total row (always last)
+            ('BACKGROUND', (0, last_row), (-2, last_row), colors.HexColor('#ffe082')),
+            ('SPAN', (1, last_row), (6, last_row)),
+            ('ALIGN', (1, last_row), (6, last_row), 'LEFT'),
+            ('ALIGN', (7, last_row), (7, last_row), 'RIGHT'),
+            ('FONTNAME', (1, last_row), (1, last_row), 'Helvetica-Bold'),
+            ('FONTNAME', (7, last_row), (7, last_row), 'Helvetica-Bold'),
+            # Borders
             ('BOX', (0, 0), (-1, -1), 1, colors.black),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),

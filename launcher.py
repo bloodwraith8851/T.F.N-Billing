@@ -119,11 +119,31 @@ def initialize_directories():
         logging.info(f"Changed working directory to: {os.getcwd()}")
         
         # Create required directories
-        dirs_to_create = ['output_invoices', 'assets']
+        dirs_to_create = ['output_invoices', 'assets', os.path.join('web', 'static', 'assets')]
         for dir_name in dirs_to_create:
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
                 logging.info(f"Created directory: {dir_name}")
+                
+        # Copy default assets from bundled _MEIPASS if they don't exist locally
+        try:
+            import shutil
+            bundled_assets = os.path.join(getattr(sys, '_MEIPASS', app_dir), 'assets')
+            if os.path.exists(bundled_assets) and bundled_assets != os.path.abspath('assets'):
+                for filename in ['logo.png', 'logo.ico']:
+                    bundled_file = os.path.join(bundled_assets, filename)
+                    local_root_file = os.path.join('assets', filename)
+                    local_web_file = os.path.join('web', 'static', 'assets', filename)
+                    
+                    if os.path.exists(bundled_file):
+                        if not os.path.exists(local_root_file):
+                            shutil.copy2(bundled_file, local_root_file)
+                            logging.info(f"Copied bundled {filename} to root assets.")
+                        if filename == 'logo.png' and not os.path.exists(local_web_file):
+                            shutil.copy2(bundled_file, local_web_file)
+                            logging.info(f"Copied bundled logo to web/static/assets.")
+        except Exception as e:
+            logging.error(f"Error copying bundled assets: {str(e)}")
                 
         # Initialize database files
         db_files = {

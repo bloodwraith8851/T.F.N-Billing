@@ -7,6 +7,7 @@ import backend
 import threading
 import subprocess
 import time
+from datetime import datetime
 
 # Helper for PyInstaller resource paths
 def resource_path(relative_path):
@@ -50,7 +51,7 @@ def mark_invoice_paid(invoice_num):
             if log['invoice_num'] == invoice_num:
                 log['status'] = 'Paid'
                 log['payment_method'] = 'Manual Entry'
-                log['payment_date'] = backend.datetime.now().strftime("%d-%m-%Y")
+                log['payment_date'] = datetime.now().strftime("%d-%m-%Y")
                 break
         backend.save_logs(logs)
         return {"status": "success", "message": f"Invoice {invoice_num} marked as paid."}
@@ -66,7 +67,7 @@ def export_customers_csv():
         import pandas as pd
         df = pd.DataFrame(customers)
         os.makedirs('exports', exist_ok=True)
-        filename = f"exports/Customers_Export_{backend.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"exports/Customers_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(filename, index=False)
         return {"status": "success", "message": f"Exported successfully to {filename}"}
     except Exception as e:
@@ -81,7 +82,7 @@ def export_logs_csv():
         import pandas as pd
         df = pd.DataFrame(logs)
         os.makedirs('exports', exist_ok=True)
-        filename = f"exports/Invoice_History_{backend.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"exports/Invoice_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(filename, index=False)
         return {"status": "success", "message": f"Exported successfully to {filename}"}
     except Exception as e:
@@ -146,6 +147,35 @@ def get_plans():
     return backend.PLANS
 
 @eel.expose
+def get_settings():
+    return backend.load_settings()
+
+@eel.expose
+def save_settings_data(data):
+    try:
+        backend.save_settings(data)
+        return {"status": "success", "message": "Settings saved successfully."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def get_version():
+    try:
+        version_file = resource_path("version.json")
+        with open(version_file, 'r') as f:
+            return json.load(f).get("version", "?")
+    except Exception:
+        return "?"
+
+@eel.expose
+def reset_invoice_counter():
+    try:
+        backend.save_invoice_number(2058)
+        return {"status": "success", "message": "Invoice counter reset to 2059."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
 def open_pdf(filename):
     """Open a generated PDF invoice in the default viewer."""
     try:
@@ -193,9 +223,8 @@ def generate_invoice(data):
         
         # Log invoice
         logs = backend.load_logs()
-        from datetime import datetime as dt
         logs.append({
-            "datetime": dt.now().strftime("%d-%m-%Y %H:%M"),
+            "datetime": datetime.now().strftime("%d-%m-%Y %H:%M"),
             "customer_name": data.get('name', ''),
             "customer_id": data.get('customer_id', ''),
             "phone": data.get('phone', ''),
@@ -299,8 +328,15 @@ def check_for_updates():
             if not latest_version:
                 return {"status": "no_update", "local": local_version}
             
-            # Simple version comparison
-            if latest_version > local_version:
+            # Proper semantic version comparison (handles 1.10.0 > 1.9.0 correctly)
+            try:
+                latest_tuple = tuple(int(x) for x in latest_version.split('.'))
+                local_tuple = tuple(int(x) for x in local_version.split('.'))
+            except ValueError:
+                latest_tuple = (0,)
+                local_tuple = (0,)
+
+            if latest_tuple > local_tuple:
                 # Find the installer asset - look for ANY .exe if Setup.exe not found
                 assets = latest_release.get("assets", [])
                 installer_url = next((a.get("browser_download_url") for a in assets if "Setup.exe" in a.get("name", "")), None)

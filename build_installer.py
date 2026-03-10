@@ -32,10 +32,20 @@ def build_installer():
         "--noconfirm",
         "--onefile",
         "--windowed",
-        f"--add-data={dist_path};Thunderstorm Billing", # Bundles the app dist as 'Thunderstorm Billing' folder in _MEIPASS
+        f"--add-data={dist_path};Thunderstorm Billing",  # App bundle
+        "--add-data=installer_web;installer_web",         # HTML/CSS/JS frontend
+        "--add-data=version.json;.",                      # Version display
+        "--hidden-import=eel",
+        "--hidden-import=bottle",
+        "--hidden-import=bottle_websocket",
+        "--hidden-import=geventwebsocket",
+        "--hidden-import=whichcraft",
         "--name=Thunderstorm_Billing_Setup",
         "installer_setup.py"
     ]
+    # Optionally bundle existing settings.json so first-run has correct defaults
+    if os.path.exists("settings.json"):
+        setup_cmd.insert(-1, "--add-data=settings.json;.")
     subprocess.run(setup_cmd, check=True)
     print("\nInstaller built successfully: dist/Thunderstorm_Billing_Setup.exe")
 

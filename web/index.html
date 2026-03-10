@@ -84,6 +84,10 @@
                     <i class="ri-history-line"></i>
                     <span>Invoice History</span>
                 </li>
+                <li data-view="settings">
+                    <i class="ri-settings-3-line"></i>
+                    <span>Settings</span>
+                </li>
                 <li onclick="checkForUpdates(true)" style="cursor: pointer; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
                     <i class="ri-refresh-line" style="color: #4A6CFA;"></i>
                     <span style="color: #4A6CFA; font-weight: 500;">Check for Updates</span>
@@ -367,7 +371,112 @@
                     </div>
                 </section>
 
-                <!-- Logs View -->
+                <!-- Settings View -->
+                <section id="settings" class="view hidden-view">
+                    <div class="view-header">
+                        <h1>Settings</h1>
+                    </div>
+
+                    <!-- Company Profile -->
+                    <div class="settings-card animated-entry">
+                        <div class="settings-section-header">
+                            <i class="ri-building-line"></i>
+                            <h3>Company Profile</h3>
+                        </div>
+                        <div class="settings-grid">
+                            <div class="settings-field full-width">
+                                <label>Company Name</label>
+                                <input type="text" id="s-company_name" class="settings-input" placeholder="e.g. THUNDERSTORM FIBERNET">
+                            </div>
+                            <div class="settings-field full-width">
+                                <label>Company Address</label>
+                                <input type="text" id="s-company_address" class="settings-input" placeholder="Full address">
+                            </div>
+                            <div class="settings-field">
+                                <label>GSTIN</label>
+                                <input type="text" id="s-company_gstin" class="settings-input" placeholder="e.g. 06DJVPP9834G1ZD">
+                            </div>
+                            <div class="settings-field">
+                                <label>Phone Number</label>
+                                <input type="text" id="s-company_phone" class="settings-input" placeholder="e.g. 8585986890">
+                            </div>
+                            <div class="settings-field">
+                                <label>Email</label>
+                                <input type="text" id="s-company_email" class="settings-input" placeholder="e.g. info@company.com">
+                            </div>
+                            <div class="settings-field">
+                                <label>Place of Supply (State)</label>
+                                <input type="text" id="s-place_of_supply" class="settings-input" placeholder="e.g. Haryana">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Settings -->
+                    <div class="settings-card animated-entry" style="animation-delay: 0.1s">
+                        <div class="settings-section-header">
+                            <i class="ri-file-text-line"></i>
+                            <h3>Invoice Settings</h3>
+                        </div>
+                        <div class="settings-grid">
+                            <div class="settings-field">
+                                <label>GST Rate (each of CGST &amp; SGST, %)</label>
+                                <input type="number" id="s-gst_rate" class="settings-input" step="0.5" min="0" max="28" placeholder="e.g. 9">
+                            </div>
+                            <div class="settings-field">
+                                <label>Invoice Number Prefix</label>
+                                <input type="text" id="s-invoice_prefix" class="settings-input" placeholder="e.g. TF/25-26/HR/">
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-highlight);">
+                            <button class="btn btn-secondary" onclick="doResetCounter()" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">
+                                <i class="ri-refresh-line"></i> Reset Invoice Counter
+                            </button>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 12px;">Resets to invoice #2059</span>
+                        </div>
+                    </div>
+
+                    <!-- Appearance -->
+                    <div class="settings-card animated-entry" style="animation-delay: 0.15s">
+                        <div class="settings-section-header">
+                            <i class="ri-palette-line"></i>
+                            <h3>Appearance</h3>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <p style="font-weight: 500; color: var(--text-main);">Theme</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Switch between dark and light mode</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="toggleTheme()" id="theme-toggle-btn">
+                                <i class="ri-moon-line" id="settings-theme-icon"></i> Toggle Theme
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- About -->
+                    <div class="settings-card animated-entry" style="animation-delay: 0.2s">
+                        <div class="settings-section-header">
+                            <i class="ri-information-line"></i>
+                            <h3>About</h3>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <p style="font-weight: 500; color: var(--text-main);">Thunderstorm Billing</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Version: <strong id="s-version">...</strong></p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">© 2025 Thunderstorm Fibernet. All rights reserved.</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="checkForUpdates(true)">
+                                <i class="ri-refresh-line"></i> Check for Updates
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                        <button class="btn btn-primary" onclick="saveSettings()" style="padding: 12px 32px; font-size: 1rem;">
+                            <i class="ri-save-line"></i> Save Settings
+                        </button>
+                    </div>
+                </section>
                 <section id="logs" class="view hidden-view">
                     <div class="view-header">
                         <h2>Invoice History</h2>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Thunderstorm Billing — Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"
+        crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="installer.css">
+    <script src="/eel.js"></script>
+</head>
+
+<body>
+
+    <!-- Background layers (exactly like dashboard) -->
+    <div class="aurora"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div id="particles-js"></div>
+
+    <div class="clouds-container">
+        <div class="moon"></div>
+        <div class="cloud cloud-1">
+            <div class="cloud-body"></div>
+        </div>
+        <div class="cloud cloud-2">
+            <div class="cloud-body"></div>
+        </div>
+        <div class="cloud cloud-3">
+            <div class="cloud-body"></div>
+        </div>
+        <div class="cloud cloud-4">
+            <div class="cloud-body"></div>
+        </div>
+        <div class="cloud cloud-5">
+            <div class="cloud-body"></div>
+        </div>
+    </div>
+
+    <!-- App shell -->
+    <div class="installer-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">⚡</span>
+                <div>
+                    <div class="brand-name">Thunderstorm</div>
+                    <div class="brand-name">Billing</div>
+                </div>
+            </div>
+
+            <div class="sidebar-steps">
+                <div class="step active" id="step-ind-1">
+                    <div class="step-dot"></div>
+                    <span>Welcome</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step-ind-2">
+                    <div class="step-dot"></div>
+                    <span>Installing</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step-ind-3">
+                    <div class="step-dot"></div>
+                    <span>Complete</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <span id="ver-label">v…</span>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+
+            <!-- ── Screen 1: Welcome ── -->
+            <div id="screen-welcome" class="screen active-screen">
+                <div class="screen-inner">
+                    <h1 class="screen-title">Installation Setup</h1>
+                    <p class="screen-sub">
+                        Choose where Thunderstorm Billing should be installed.<br>
+                        A desktop shortcut will be created automatically.
+                    </p>
+
+                    <div class="field-group">
+                        <label class="field-label">INSTALL LOCATION</label>
+                        <div class="path-row">
+                            <input type="text" id="path-input" class="path-input"
+                                placeholder="C:\Program Files\Thunderstorm Billing">
+                            <button class="btn-browse" onclick="browsePath()">
+                                <i class="ri-folder-open-line"></i> Browse
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="features">
+                        <div class="feature-item">
+                            <i class="ri-file-text-line"></i>
+                            <span>Instant GST invoice generation</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="ri-group-line"></i>
+                            <span>Customer management &amp; invoice history</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="ri-whatsapp-line"></i>
+                            <span>WhatsApp sharing &amp; auto-updates</span>
+                        </div>
+                    </div>
+
+                    <p class="terms">By installing you agree to the terms of use.</p>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn-cancel" onclick="eel.cancel_install()()">Cancel</button>
+                    <button class="btn-install" id="btn-install-now" onclick="startInstall()">
+                        Install Now &nbsp;<i class="ri-arrow-right-line"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Screen 2: Installing ── -->
+            <div id="screen-installing" class="screen">
+                <div class="screen-inner">
+                    <div class="progress-icon spinning"><i class="ri-loader-4-line"></i></div>
+                    <h1 class="screen-title" id="install-heading">Installing…</h1>
+                    <p class="screen-sub" id="install-sub">Copying files, please wait.</p>
+
+                    <div class="progress-wrap">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="progress-fill"></div>
+                        </div>
+                        <span class="progress-pct" id="progress-pct">0%</span>
+                    </div>
+
+                    <p class="progress-file" id="progress-file"></p>
+                </div>
+            </div>
+
+            <!-- ── Screen 3: Done ── -->
+            <div id="screen-done" class="screen">
+                <div class="screen-inner center">
+                    <div class="done-icon"><i class="ri-checkbox-circle-line"></i></div>
+                    <h1 class="screen-title">Installation Complete!</h1>
+                    <p class="screen-sub">Thunderstorm Billing has been installed successfully.</p>
+                    <p class="screen-sub" id="done-path"
+                        style="color: var(--accent); font-size:0.85rem; margin-top:6px;"></p>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-cancel" onclick="eel.cancel_install()()">Close</button>
+                    <button class="btn-install success" onclick="eel.launch_app()()">
+                        Launch App &nbsp;<i class="ri-rocket-2-line"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Screen: Error ── -->
+            <div id="screen-error" class="screen">
+                <div class="screen-inner center">
+                    <div class="done-icon error-icon"><i class="ri-close-circle-line"></i></div>
+                    <h1 class="screen-title">Installation Failed</h1>
+                    <p class="screen-sub" id="error-msg">An unknown error occurred.</p>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-cancel" onclick="eel.cancel_install()()">Close</button>
+                    <button class="btn-install" onclick="showScreen('welcome')">
+                        <i class="ri-refresh-line"></i> &nbsp;Retry
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="installer.js"></script>
+</body>
+
+</html>
