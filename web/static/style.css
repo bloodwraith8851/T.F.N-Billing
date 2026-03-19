@@ -2040,3 +2040,207 @@ select:focus {
 }
 
 /* ================================================================ */
+
+/* ======================== NOTIFICATION PANEL ======================== */
+.notification-btn { position: relative; }
+
+.notif-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.notification-panel {
+    position: fixed;
+    top: 70px; right: 20px;
+    width: 340px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border-highlight);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    z-index: 9998;
+    overflow: hidden;
+    animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+.notification-panel.hidden { display: none; }
+
+.notif-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600; font-size: 0.9rem; color: var(--text-main);
+}
+
+.notif-close {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 1.1rem; padding: 4px;
+    border-radius: 6px; transition: color 0.2s;
+}
+.notif-close:hover { color: var(--text-main); }
+
+.notif-list { max-height: 320px; overflow-y: auto; }
+
+.notif-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+.notif-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(255,255,255,0.03); }
+
+.notif-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+}
+
+.notif-content { flex: 1; }
+.notif-title { font-weight: 600; font-size: 0.88rem; color: var(--text-main); margin-bottom: 2px; }
+.notif-sub   { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 2px; }
+.notif-time  { font-size: 0.72rem; color: var(--text-muted); opacity: 0.7; }
+
+/* ======================== OUTSTANDING DUES ======================== */
+.outstanding-card { padding: 24px; }
+
+.outstanding-badge {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444; font-size: 0.78rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+}
+
+.outstanding-list { max-height: 220px; overflow-y: auto; }
+
+.outstanding-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(255,59,48,0.04);
+    border: 1px solid rgba(255,59,48,0.08);
+    margin-bottom: 8px; transition: background 0.2s;
+}
+.outstanding-item:hover { background: rgba(255,59,48,0.08); }
+
+.outstanding-info { display: flex; flex-direction: column; gap: 2px; }
+.outstanding-name { font-weight: 600; font-size: 0.88rem; color: var(--text-main); }
+.outstanding-inv  { font-size: 0.75rem; color: var(--text-muted); }
+
+.outstanding-right { display: flex; align-items: center; gap: 10px; }
+.outstanding-amount { font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
+.outstanding-days {
+    font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+}
+.overdue-warn     { background: rgba(255,193,7,0.15); color: #ffc107; }
+.overdue-critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* ======================== COLLECTION RATE RING ======================== */
+.collection-rate-card { padding: 20px 24px; text-align: center; }
+
+.rate-ring-wrap {
+    position: relative; width: 80px; height: 80px; margin: 12px auto;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.rate-ring { width: 80px; height: 80px; transform: rotate(-90deg); }
+
+.rate-ring-bg   { fill: none; stroke: rgba(99,102,241,0.12); stroke-width: 8; }
+.rate-ring-fill {
+    fill: none; stroke: #6366f1; stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+.rate-number {
+    position: absolute; font-size: 1rem; font-weight: 700;
+    color: var(--text-main); letter-spacing: -0.5px;
+}
+
+/* ======================== CONNECTION STATUS BADGES ======================== */
+.conn-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.3px;
+}
+.status-active     { background: rgba(48,209,88,0.15);  color: #30d158; }
+.status-suspended  { background: rgba(255,149,0,0.15);  color: #ff9500; }
+.status-terminated { background: rgba(239,68,68,0.15);  color: #ef4444; }
+
+/* ======================== TAG PILLS ======================== */
+.tag-pill {
+    display: inline-block; padding: 2px 9px; border-radius: 12px; margin: 2px;
+    background: rgba(99,102,241,0.12); color: #a78bfa;
+    font-size: 0.72rem; font-weight: 500;
+}
+
+/* ======================== ANALYTICS GRID ======================== */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding-bottom: 24px;
+}
+.analytics-chart-card { padding: 28px; }
+
+@media (max-width: 1100px) { .analytics-grid { grid-template-columns: 1fr; } }
+
+/* ======================== LOG VIEWER ======================== */
+.log-viewer {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px 16px;
+    height: 280px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: #9ca3af;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+[data-theme="light"] .log-viewer {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* ======================== DUPLICATE BANNER ======================== */
+.duplicate-banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; border-radius: 12px; margin-bottom: 20px;
+    background: rgba(255,149,0,0.1);
+    border: 1px solid rgba(255,149,0,0.3);
+    color: #ff9500; font-size: 0.88rem; font-weight: 500;
+    animation: toastIn 0.3s ease;
+}
+.duplicate-banner i { font-size: 1.2rem; flex-shrink: 0; }
+
+/* ======================== FILTERS CARD ======================== */
+.filters-card {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    padding: 16px 20px; margin-bottom: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+.filters-card select, .filters-card input[type="date"] {
+    background: var(--bg-secondary); border: 1px solid var(--border-highlight);
+    color: var(--text-main); padding: 8px 14px; border-radius: 10px; font-size: 0.85rem;
+}
+.search-group {
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;
+    background: var(--bg-secondary); border: 1px solid var(--border-highlight);
+    border-radius: 10px; padding: 0 14px;
+}
+.search-group i { color: var(--text-muted); font-size: 1rem; }
+.search-group input {
+    background: transparent; border: none; outline: none;
+    color: var(--text-main); padding: 9px 0; font-size: 0.88rem; width: 100%;
+}

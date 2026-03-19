@@ -7,18 +7,16 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Thunderstorm Billing — Setup</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"
-        crossorigin="anonymous">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet"
-        crossorigin="anonymous">
+    <title>Thunderstorm Billing v2.0 — Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="installer.css">
     <script src="/eel.js"></script>
 </head>
 
 <body>
 
-    <!-- Background layers (exactly like dashboard) -->
+    <!-- Background layers -->
     <div class="aurora"></div>
     <div class="shooting-star"></div>
     <div class="shooting-star"></div>
@@ -27,21 +25,11 @@
 
     <div class="clouds-container">
         <div class="moon"></div>
-        <div class="cloud cloud-1">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-2">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-3">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-4">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-5">
-            <div class="cloud-body"></div>
-        </div>
+        <div class="cloud cloud-1"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-2"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-3"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-4"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-5"><div class="cloud-body"></div></div>
     </div>
 
     <!-- App shell -->
@@ -55,6 +43,12 @@
                     <div class="brand-name">Thunderstorm</div>
                     <div class="brand-name">Billing</div>
                 </div>
+            </div>
+
+            <!-- v2.0 badge -->
+            <div class="version-badge-wrap">
+                <span class="version-badge">v2.0</span>
+                <span class="version-badge-label">NEW</span>
             </div>
 
             <div class="sidebar-steps">
@@ -85,11 +79,13 @@
             <!-- ── Screen 1: Welcome ── -->
             <div id="screen-welcome" class="screen active-screen">
                 <div class="screen-inner">
-                    <h1 class="screen-title">Installation Setup</h1>
-                    <p class="screen-sub">
-                        Choose where Thunderstorm Billing should be installed.<br>
-                        A desktop shortcut will be created automatically.
-                    </p>
+                    <div class="screen-header">
+                        <h1 class="screen-title">Installation Setup</h1>
+                        <p class="screen-sub">
+                            Choose where Thunderstorm Billing v2.0 should be installed.<br>
+                            A desktop shortcut will be created automatically.
+                        </p>
+                    </div>
 
                     <div class="field-group">
                         <label class="field-label">INSTALL LOCATION</label>
@@ -102,18 +98,36 @@
                         </div>
                     </div>
 
+                    <!-- v2.0 Feature highlights -->
+                    <div class="features-label">WHAT'S NEW IN v2.0</div>
                     <div class="features">
                         <div class="feature-item">
-                            <i class="ri-file-text-line"></i>
-                            <span>Instant GST invoice generation</span>
+                            <i class="ri-database-2-line"></i>
+                            <div class="feature-text">
+                                <span class="feature-title">SQLite Database</span>
+                                <span class="feature-desc">Faster, more reliable data storage with auto-backup</span>
+                            </div>
                         </div>
                         <div class="feature-item">
-                            <i class="ri-group-line"></i>
-                            <span>Customer management &amp; invoice history</span>
+                            <i class="ri-bar-chart-box-line"></i>
+                            <div class="feature-text">
+                                <span class="feature-title">Analytics Dashboard</span>
+                                <span class="feature-desc">Monthly revenue charts &amp; plan breakdown donut</span>
+                            </div>
                         </div>
                         <div class="feature-item">
-                            <i class="ri-whatsapp-line"></i>
-                            <span>WhatsApp sharing &amp; auto-updates</span>
+                            <i class="ri-user-search-line"></i>
+                            <div class="feature-text">
+                                <span class="feature-title">Customer Profiles</span>
+                                <span class="feature-desc">Notes, tags, connection status &amp; CSV import</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <i class="ri-notification-3-line"></i>
+                            <div class="feature-text">
+                                <span class="feature-title">Notification Center &amp; Shortcuts</span>
+                                <span class="feature-desc">Bell icon + Ctrl+N / Ctrl+H / Ctrl+S</span>
+                            </div>
                         </div>
                     </div>
 
@@ -130,9 +144,9 @@
 
             <!-- ── Screen 2: Installing ── -->
             <div id="screen-installing" class="screen">
-                <div class="screen-inner">
+                <div class="screen-inner center">
                     <div class="progress-icon spinning"><i class="ri-loader-4-line"></i></div>
-                    <h1 class="screen-title" id="install-heading">Installing…</h1>
+                    <h1 class="screen-title" id="install-heading">Installing...</h1>
                     <p class="screen-sub" id="install-sub">Copying files, please wait.</p>
 
                     <div class="progress-wrap">
@@ -151,9 +165,8 @@
                 <div class="screen-inner center">
                     <div class="done-icon"><i class="ri-checkbox-circle-line"></i></div>
                     <h1 class="screen-title">Installation Complete!</h1>
-                    <p class="screen-sub">Thunderstorm Billing has been installed successfully.</p>
-                    <p class="screen-sub" id="done-path"
-                        style="color: var(--accent); font-size:0.85rem; margin-top:6px;"></p>
+                    <p class="screen-sub">Thunderstorm Billing v2.0 has been installed successfully.</p>
+                    <p class="screen-sub" id="done-path" style="color:var(--accent);font-size:.85rem;margin-top:6px;"></p>
                 </div>
                 <div class="btn-row">
                     <button class="btn-cancel" onclick="eel.cancel_install()()">Close</button>
@@ -181,7 +194,6 @@
         </main>
     </div>
 
-    <!-- Particles.js -->
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script src="installer.js"></script>
 </body>

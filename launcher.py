@@ -119,7 +119,8 @@ def initialize_directories():
         logging.info(f"Changed working directory to: {os.getcwd()}")
         
         # Create required directories
-        dirs_to_create = ['output_invoices', 'assets', os.path.join('web', 'static', 'assets')]
+        dirs_to_create = ['output_invoices', 'assets', 'backups', 'exports',
+                          os.path.join('web', 'static', 'assets')]
         for dir_name in dirs_to_create:
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)

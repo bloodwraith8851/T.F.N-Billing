@@ -2,18 +2,21 @@
 
 <img src="https://ui-avatars.com/api/?name=TF&background=4A6CFA&color=fff&size=128" alt="T.F.N Logo" width="128" style="border-radius: 20px; margin-bottom: 20px;">
 
-# 🌌 THUNDERSTORM BILLING 🌌
-### _The Atmosphere of Automated ISP Management_
+# ⚡ THUNDERSTORM BILLING
+
+### _Calming ISP Billing, Elevated to v2.0_
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-1.1.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing)
+[![Version](https://img.shields.io/badge/version-2.0.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
 [![Python](https://img.shields.io/badge/python-3.10+-4A6CFA?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![SQLite](https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/license-MIT-9C27B0?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?style=for-the-badge&logo=windows)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
 
 <br>
 
-「 [✨ Features](#-stellar-features) • [🌊 Blueprint](#-system-blueprint) • [🚀 Setup](#-fluid-setup) • [🔮 Vision](#-cosmic-vision) 」
+「 [✨ Features](#-features) • [🗄️ Database](#️-database-layer) • [🌊 Architecture](#-architecture) • [🚀 Setup](#-setup) • [📋 Changelog](#-changelog) • [🔮 Roadmap](#-roadmap) 」
 
 </div>
 
@@ -26,99 +29,209 @@
 <br>
 
 ## 🌟 About
-<div align="center">
-  <p>
-    A modern, open-source ISP billing system with dark-mode UI, built in Python. 
-    Features smart invoice generation, customer management, real-time analytics, and GST compliance. 
-    Perfect for ISPs seeking a free, feature-rich billing solution.
-  </p>
-</div>
+
+A modern, open-source ISP billing desktop application built with Python + Eel.
+Thunderstorm Billing v2.0 brings a **SQLite-powered** data layer, live **analytics charts**, enriched **customer profiles**, and a polished notification-first UX — all inside a breathtaking dark-mode glassmorphism interface.
 
 <br>
 
 ## 🎭 The Aesthetic
-**Thunderstorm Billing** is built on a **Calming Dashboard** philosophy. It uses high-fidelity visual elements to reduce cognitive load and provide a premium user experience.
 
 <div align="center">
   <table>
     <tr>
       <td align="center"><b>☁️ Cloud Morphism</b><br>Dynamic CSS breathing effects</td>
-      <td align="center"><b>✨ Stellar Particles</b><br>Responsive 3D Backdrop</td>
+      <td align="center"><b>✨ Stellar Particles</b><br>Responsive 3D backdrop</td>
     </tr>
     <tr>
-      <td align="center"><b>🌌 Aurora Shimmer</b><br>Ethereal time-based gradients</td>
-      <td align="center"><b>🍃 Glass UI</b><br>Frosted-glass clarity</td>
+      <td align="center"><b>🌌 Aurora Shimmer</b><br>Ethereal animated gradients</td>
+      <td align="center"><b>🍃 Glass UI</b><br>Frosted-glass card clarity</td>
     </tr>
   </table>
 </div>
 
 <br>
 
-## ✨ Stellar Features
+## ✨ Features
 
-> [!IMPORTANT]
-> **Aura Invoicing**: Every invoice is a GST-compliant masterwork, archived and numbered automatically.
+### 🧾 Invoicing
+- GST-compliant **PDF invoice generation** (ReportLab) with watermark logo
+- Auto-numbered invoices with configurable prefix (`TF/25-26/HR/`)
+- **Duplicate invoice detection** — warns before generating a repeat for the same customer & billing period
+- Discount, late-fee, and partial payment fields
 
-> [!TIP]
-> **Stellar Sync**: Use the integrated WhatsApp delivery suite to send bills directly to customer phones with zero friction.
+### 📊 Analytics *(v2.0 NEW)*
+- **Monthly Revenue** bar chart — last 6 months at a glance
+- **Plan Breakdown** donut chart — see which plans dominate
+- **Collection Rate** KPI with animated SVG ring indicator
+- **Outstanding Dues** panel — all unpaid invoices with days-overdue badge
 
-- **Luminous Dashboard**: Instant visual feedback on your revenue stream via real-time Chart.js assets.
-- **Customer Nebula**: A high-speed searchable directory for managing your subscriber base.
-- **Auto-Update Pulse**: Stay ahead with built-in GitHub monitoring and one-click installation.
+### 👥 Customer Management *(v2.0 Enhanced)*
+- Live **search + status filter** (Active / Suspended / Terminated)
+- **Customer Profile** view — full invoice history, lifetime value, pending dues
+- **Notes, Tags, Connection Status** editing per customer
+- **CSV Import** — bulk-load customers from a spreadsheet
+
+### 📜 Invoice History
+- **Date-range filter** + text search + status filter
+- Mark invoice as **Paid** in one click
+- **WhatsApp sharing** — opens chat with pre-filled message + PDF in clipboard
+- Export full history to CSV
+
+### 🔔 Notifications & Shortcuts *(v2.0 NEW)*
+- **Bell icon** — slide-out panel with last 5 invoice events
+- Keyboard shortcuts: `Ctrl+N` New Invoice · `Ctrl+H` History · `Ctrl+S` Settings
+
+### ⚙️ Settings & Maintenance
+- Company details, GST rate, invoice prefix — all configurable
+- **App Log Viewer** in Settings (last 150 lines of debug log)
+- **Auto-update** checker — compares GitHub releases, one-click installer download
+- Invoice counter reset
 
 <br>
 
-## 🌊 System Blueprint
+## 🗄️ Database Layer
+
+> [!IMPORTANT]
+> v2.0 migrates from JSON flat files to **SQLite** (`billing.db`) automatically on first launch. Your existing `customers.json` and `invoice_log.json` data is preserved and migrated — no manual steps needed.
+
+```
+billing.db
+├── customers       — id, name, phone, address, gstin, notes, tags, status
+└── invoice_log     — datetime, amount, plan, status, payment_method, filename
+```
+
+| Feature | JSON (v1.x) | SQLite (v2.0) |
+|---|---|---|
+| Speed | O(n) full-file read/write | O(1) indexed queries |
+| Concurrent safety | Race conditions possible | Per-connection thread safety |
+| Analytics queries | Full scan in Python | Native SQL aggregations |
+| **Auto-backup** | ✗ | ✅ Daily · keeps last 7 |
+
+`users.json`, `settings.json`, `invoice_tracker.json` remain JSON-based (lightweight, no migration needed).
+
+<br>
+
+## 🌊 Architecture
+
 <details>
-<summary><b>Click to expand Technical Architecture 🛠️</b></summary>
+<summary><b>Click to expand — Technical Blueprint 🛠️</b></summary>
 
-### 🐍 Backend Engine (Python)
-- **`launcher.py`**: The entry portal handling versioning and splash sequences.
-- **`app_eel.py`**: The Bridge connecting Python's logic to the Web interface.
-- **`backend.py`**: The logic core managing JSON storage and PDF (ReportLab) generation.
-- **`installer_setup.py`**: The architect script for building distributive Windows installers.
+### Backend (`Python`)
 
-### 🎨 Frontend Atmosphere (Web)
-- **`web/index.html`**: Semantic structure for a fluid single-page experience.
-- **`web/static/style.css`**: The Aura containing all Glassmorphism and animation logic.
-- **`web/static/script.js`**: The Consciousness managing particles, charts, and API bridges.
+| File | Role |
+|---|---|
+| `launcher.py` | Entry point — installs deps, sets up dirs, starts Eel |
+| `app_eel.py` | Eel bridge — exposes all Python functions to JS |
+| `backend.py` | Core logic — SQLite CRUD, PDF generation, analytics, backup |
+| `installer_setup.py` | Standalone installer EXE frontend (Eel + win32com) |
+| `build_installer.py` | PyInstaller build script for app + installer |
+
+### Frontend (`Web`)
+
+| File | Role |
+|---|---|
+| `web/index.html` | SPA shell — all views (Dashboard, Customers, Analytics, History, Settings) |
+| `web/static/style.css` | Full design system — glassmorphism, animations, dark/light theme |
+| `web/static/script.js` | All UI logic — charts, filters, notifications, keyboard shortcuts |
+
+### Data Flow
+```
+User Action (JS)
+    ↓  eel.function_name(data)
+app_eel.py  (bridge)
+    ↓  backend.function(data)
+backend.py  (logic + SQLite)
+    ↓  return dict
+app_eel.py  → JS callback
+    ↓
+UI update (DOM)
+```
+
 </details>
 
 <br>
 
-## 🚀 Fluid Setup
+## 🚀 Setup
 
-1. **Clone the Atmosphere**
-   ```bash
-   git clone https://github.com/bloodwraith8851/T.F.N-Billing.git
-   ```
-2. **Hydrate Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Ignite the Dashboard**
-   ```bash
-   python launcher.py
-   ```
+### Option A — Installer (Recommended)
+1. Download **`Thunderstorm_Billing_v2.0.0_Setup.exe`** from [Releases](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
+2. Run the installer — choose your install folder, click **Install Now**
+3. Launch from the desktop shortcut
+
+### Option B — Run from Source
+```bash
+# 1. Clone
+git clone https://github.com/bloodwraith8851/T.F.N-Billing.git
+cd T.F.N-Billing
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Launch
+python launcher.py
+```
+
+### Build the installer yourself
+```bash
+python build_installer.py
+# Output: dist/Thunderstorm_Billing_v2.0.0_Setup.exe
+```
 
 <br>
 
-## 🔮 Cosmic Vision (Roadmap)
+## 📋 Changelog
+
+### v2.0.0 — 2026-03-19
+> Major release — SQLite migration, analytics, enhanced customer management
+
+**New**
+- SQLite database (`billing.db`) with one-time auto-migration from JSON
+- Daily auto-backup — keeps last 7 copies in `backups/`
+- Analytics view — Monthly Revenue bar chart + Plan Breakdown donut
+- Collection Rate KPI with animated SVG ring
+- Outstanding Dues live panel on dashboard
+- Customer Profile view (notes, tags, status, invoice history, LTV)
+- Notification center (bell icon, last 5 events)
+- Keyboard shortcuts: `Ctrl+N` / `Ctrl+H` / `Ctrl+S`
+- Date-range + status filter on Invoice History
+- CSV customer import
+- App Log Viewer in Settings
+- Versioned installer: `Thunderstorm_Billing_vX.X.X_Setup.exe`
+
+**Changed**
+- `generate_invoice` — uses fast `append_log()` INSERT instead of full-table rewrite
+- Dashboard stats include `collection_rate` and `invoice_count`
+- Installer window resized to 900×640 for better layout
+
+**Removed**
+- Dead Flask API routes from `backend.py` (~120 lines)
+- Unused `LOGO_PATH`, `ICO_PATH`, `calculate_amounts()` dead code
+
+---
+
+### v1.1.0 → v1.0.x
+- Toast notifications, visual polish, installer UI, auto-update system
+
+<br>
+
+## 🔮 Roadmap
 
 <details>
-<summary><b>View the 3-Phase Expansion Plan 🛰️</b></summary>
+<summary><b>View planned features 🛰️</b></summary>
 
-#### ☄️ Phase 1: Orbital Integration
-- **Aura AI Assistant**: Voice-activated billing commands.
-- **Bulk Shimmer**: Generator for 1000+ invoices in a single thread.
+#### Phase 1 — Near-term
+- [ ] MikroTik / OLT live status on dashboard
+- [ ] Multi-month invoice generation
 
-#### 🌌 Phase 2: Galactic Ecosystem
-- **Mobile Satellite**: Flutter-based field technician companion.
-- **Multiverse Sync**: Real-time Cloud-to-Local mirroring.
+#### Phase 2 — Mid-term
+- [ ] Mobile companion app (Flutter)
+- [ ] Cloud sync / backup to Google Drive
 
-#### 🛡️ Phase 3: Infinite Intelligence
-- **Churn Prediction**: AI monitoring for customer disconnect risks.
-- **Network Pulse**: Live MikroTik/OLT service status on the dashboard.
+#### Phase 3 — Future
+- [ ] Churn prediction AI
+- [ ] WhatsApp Business API integration (replace automation)
+
 </details>
 
 <br>
@@ -127,7 +240,7 @@
 
 <div align="center">
 
-**[GitHub Orbit](https://github.com/bloodwraith8851/T.F.N-Billing/issues)** • **[Email Pulse](mailto:support@thunderstorm.com)**
+**[🐛 Report Bug](https://github.com/bloodwraith8851/T.F.N-Billing/issues)** · **[💡 Request Feature](https://github.com/bloodwraith8851/T.F.N-Billing/issues)** · **[📦 Releases](https://github.com/bloodwraith8851/T.F.N-Billing/releases)**
 
 <br>
 

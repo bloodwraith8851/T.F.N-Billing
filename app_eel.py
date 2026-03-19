@@ -2,6 +2,7 @@ import eel
 import os
 import sys
 import json
+import webbrowser
 import requests
 import backend
 import threading
@@ -13,7 +14,6 @@ from datetime import datetime
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
@@ -22,22 +22,92 @@ def resource_path(relative_path):
 # Initialize Eel with the web folder
 eel.init(resource_path('web'))
 
-# Expose backend functions to Javascript
+# Initialize SQLite database (creates tables + migrates JSON on first run)
+backend.init_db()
+
+# Start auto-backup in background
+threading.Thread(target=backend.run_auto_backup, daemon=True).start()
+
+# ── DASHBOARD ─────────────────────────────────────────────────────────────────
+
 @eel.expose
 def get_dashboard_stats():
-    logs = backend.load_logs()
+    logs         = backend.load_logs()
     total_amount = sum(float(l.get('amount', 0)) for l in logs)
-    paid_amount = sum(float(l.get('amount', 0)) for l in logs if str(l.get('status', '')).lower() in ['paid', 'partial'])
-    pending = total_amount - paid_amount
+    paid_amount  = sum(float(l.get('amount', 0)) for l in logs
+                       if str(l.get('status', '')).lower() in ['paid', 'partial'])
+    pending      = total_amount - paid_amount
     return {
-        "revenue": total_amount,
-        "paid": paid_amount,
-        "pending": pending
+        "revenue":         total_amount,
+        "paid":            paid_amount,
+        "pending":         pending,
+        "invoice_count":   len(logs),
+        "collection_rate": backend.get_collection_rate()
     }
+
+@eel.expose
+def get_monthly_revenue():
+    return backend.get_monthly_revenue()
+
+@eel.expose
+def get_plan_breakdown():
+    return backend.get_plan_breakdown()
+
+@eel.expose
+def get_outstanding_dues():
+    return backend.get_outstanding_dues()
+
+# ── CUSTOMERS ─────────────────────────────────────────────────────────────────
 
 @eel.expose
 def get_customers():
     return backend.load_customers()
+
+@eel.expose
+def update_customer_notes(customer_id, notes, tags, connection_status):
+    try:
+        backend.update_customer_notes(customer_id, notes, tags, connection_status)
+        return {"status": "success", "message": "Customer updated."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def import_customers_csv_data(csv_text):
+    try:
+        count = backend.import_customers_csv_data(csv_text)
+        return {"status": "success", "message": f"Imported {count} customer(s)."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def get_customer_profile(customer_id):
+    try:
+        customers = backend.load_customers()
+        logs      = backend.load_logs()
+
+        customer = next((c for c in customers if c.get('customer_id') == customer_id), None)
+        if not customer:
+            return {"status": "error", "message": "Customer not found"}
+
+        customer_logs = [l for l in logs if str(l.get('customer_id')) == str(customer_id)]
+
+        total_paid   = sum(float(l.get('amount', 0)) for l in customer_logs if l.get('status') == 'Paid')
+        pending_dues = sum(float(l.get('amount', 0)) for l in customer_logs if l.get('status') != 'Paid')
+
+        return {
+            "status":   "success",
+            "customer": customer,
+            "logs":     list(reversed(customer_logs)),
+            "stats": {
+                "total_paid":     total_paid,
+                "pending_dues":   pending_dues,
+                "total_invoices": len(customer_logs)
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# ── INVOICE HISTORY ───────────────────────────────────────────────────────────
 
 @eel.expose
 def get_history():
@@ -49,14 +119,80 @@ def mark_invoice_paid(invoice_num):
         logs = backend.load_logs()
         for log in logs:
             if log['invoice_num'] == invoice_num:
-                log['status'] = 'Paid'
+                log['status']         = 'Paid'
                 log['payment_method'] = 'Manual Entry'
-                log['payment_date'] = datetime.now().strftime("%d-%m-%Y")
+                log['payment_date']   = datetime.now().strftime("%d-%m-%Y")
                 break
         backend.save_logs(logs)
         return {"status": "success", "message": f"Invoice {invoice_num} marked as paid."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@eel.expose
+def check_duplicate_invoice(customer_id, billing_from, billing_to):
+    try:
+        return backend.check_duplicate_invoice(customer_id, billing_from, billing_to)
+    except Exception as e:
+        return False
+
+# ── INVOICE GENERATION ────────────────────────────────────────────────────────
+
+@eel.expose
+def generate_invoice(data):
+    try:
+        invoice_num   = backend.load_invoice_number()
+        settings      = backend.load_settings()
+        inv_prefix    = settings.get('invoice_prefix', 'TF/25-26/HR/')
+
+        customer_name = data.get('name', 'Customer').replace(' ', '_')
+        billing_from  = data.get('billing_from', '')
+
+        try:
+            parts      = billing_from.split('-')  # "01-Mar-2026"
+            month_year = f"{parts[1]}_{parts[2]}" if len(parts) >= 3 else datetime.now().strftime("%b_%Y")
+        except Exception:
+            month_year = datetime.now().strftime("%b_%Y")
+
+        clean_name   = "".join(ch for ch in customer_name if ch.isalnum() or ch == '_')
+        pdf_filename = f"{clean_name}_{month_year}.pdf"
+        invoice_data = {**data, 'invoice_num': invoice_num, 'pdf_filename': pdf_filename}
+
+        backend.generate_pdf(invoice_data)
+        backend.save_invoice_number(invoice_num)
+
+        backend.append_log({
+            "datetime":       datetime.now().strftime("%d-%m-%Y %H:%M"),
+            "customer_name":  data.get('name', ''),
+            "customer_id":    data.get('customer_id', ''),
+            "phone":          data.get('phone', ''),
+            "invoice_num":    f"{inv_prefix}{invoice_num}",
+            "amount":         float(data.get('total_amount', 0)),
+            "paid_amount":    0,
+            "filename":       pdf_filename,
+            "status":         data.get('payment_status', 'Unpaid'),
+            "payment_method": data.get('payment_method', 'None') or 'None',
+            "payment_date":   datetime.now().strftime("%d-%m-%Y") if data.get('payment_status') in ['Paid','Partial'] else '',
+            "plan":           data.get('plan', ''),
+        })
+
+        if data.get('save_customer'):
+            backend.save_customer({
+                "name":             data.get('name', ''),
+                "customer_id":      data.get('customer_id', ''),
+                "tenant_name":      data.get('tenant_name', ''),
+                "phone":            data.get('phone', ''),
+                "customer_address": data.get('customer_address', ''),
+                "customer_gstin":   data.get('customer_gstin', ''),
+            })
+
+        webbrowser.open(os.path.abspath(os.path.join('output_invoices', pdf_filename)))
+
+        return {"status": "success",
+                "message": f"Invoice {invoice_num} generated! Saved as {pdf_filename}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# ── EXPORT ────────────────────────────────────────────────────────────────────
 
 @eel.expose
 def export_customers_csv():
@@ -69,7 +205,7 @@ def export_customers_csv():
         os.makedirs('exports', exist_ok=True)
         filename = f"exports/Customers_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(filename, index=False)
-        return {"status": "success", "message": f"Exported successfully to {filename}"}
+        return {"status": "success", "message": f"Exported to {filename}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -84,63 +220,50 @@ def export_logs_csv():
         os.makedirs('exports', exist_ok=True)
         filename = f"exports/Invoice_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         df.to_csv(filename, index=False)
-        return {"status": "success", "message": f"Exported successfully to {filename}"}
+        return {"status": "success", "message": f"Exported to {filename}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# ── PDF / WHATSAPP ─────────────────────────────────────────────────────────────
+
+@eel.expose
+def open_pdf(filename):
+    try:
+        path = os.path.abspath(os.path.join('output_invoices', filename))
+        if os.path.exists(path):
+            webbrowser.open(path)
+            return {"status": "success"}
+        return {"status": "error", "message": f"File not found: {filename}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @eel.expose
 def automate_whatsapp_attachment(phone, message, filename):
-    """Automatically attaches and sends a PDF via WhatsApp Desktop using VBScript and Clipboard"""
-    import urllib.parse
-    import webbrowser
-    import subprocess
-    import time
-    import threading
-    import os
+    import urllib.parse, webbrowser
 
     def _auto_wa():
-        # Using whatsapp:// protocol opens the native Desktop App which natively accepts file pasting
-        wa_link = f"whatsapp://send?phone={phone}&text={urllib.parse.quote(message)}"
+        wa_link  = f"whatsapp://send?phone={phone}&text={urllib.parse.quote(message)}"
         filepath = os.path.abspath(os.path.join('output_invoices', filename))
-        
         if os.path.exists(filepath):
             try:
-                print(f"Preparing to send {filename} to {phone} via Desktop App...")
-                
-                # 1. Copy the file itself to the Windows clipboard (like Ctrl+C on a file)
                 ps_cmd = f"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::SetFileDropList([System.Collections.Specialized.StringCollection]@('{filepath}'))"
                 subprocess.run(["powershell", "-command", ps_cmd], creationflags=0x08000000)
-                
-                # 2. Open WhatsApp Desktop Native App
                 os.startfile(wa_link)
-                
-                # 3. Wait 8 seconds for WhatsApp Desktop to fully load the chat
                 time.sleep(8)
-                
-                # 4. Use PyAutoGUI for secure keyboard injection (UWP app compatible)
                 import pyautogui
-                
-                # Click center of screen to ensure WhatsApp Desktop is strictly focused
-                screenWidth, screenHeight = pyautogui.size()
-                pyautogui.click(screenWidth / 2, screenHeight / 2)
+                sw, sh = pyautogui.size()
+                pyautogui.click(sw / 2, sh / 2)
                 time.sleep(0.5)
-                
-                # Press Ctrl+V securely
                 pyautogui.hotkey('ctrl', 'v')
-                
-                # Wait 2 seconds for attachment preview to load
                 time.sleep(2)
-                
-                # Press Enter to send
                 pyautogui.press('enter')
-                
-                print("WhatsApp Desktop automation script completed.")
-                
             except Exception as e:
                 print(f"Automation Error: {e}")
 
     threading.Thread(target=_auto_wa, daemon=True).start()
     return {"status": "success"}
+
+# ── PLANS / SETTINGS ──────────────────────────────────────────────────────────
 
 @eel.expose
 def get_plans():
@@ -175,208 +298,75 @@ def reset_invoice_counter():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@eel.expose
-def open_pdf(filename):
-    """Open a generated PDF invoice in the default viewer."""
-    try:
-        import webbrowser
-        path = os.path.abspath(os.path.join('output_invoices', filename))
-        if os.path.exists(path):
-            webbrowser.open(path)
-            return {"status": "success"}
-        else:
-            return {"status": "error", "message": f"File not found: {filename}"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+# ── APP LOGS ──────────────────────────────────────────────────────────────────
 
 @eel.expose
-def generate_invoice(data):
-    try:
-        invoice_num = backend.load_invoice_number()
-        
-        # Format the filename: CustomerName_Month_Year.pdf
-        customer_name = data.get('name', 'Customer').replace(' ', '_')
-        billing_from = data.get('billing_from', '')
-        
-        # frontend flatpickr sends 'd-M-Y' (e.g., '01-Dec-2025')
-        try:
-            parts = billing_from.split('-')
-            if len(parts) >= 3:
-                month = parts[1]
-                year = parts[2]
-                month_year = f"{month}_{year}"
-            else:
-                # Fallback to current month if parsing fails
-                month_year = backend.datetime.now().strftime("%b_%Y")
-        except:
-            month_year = "Unknown"
-            
-        # Optional: Clean any weird characters
-        clean_name = "".join(c for c in customer_name if c.isalnum() or c == '_')
-        
-        pdf_filename = f"{clean_name}_{month_year}.pdf"
-        
-        invoice_data = {**data, 'invoice_num': invoice_num, 'pdf_filename': pdf_filename}
-        
-        backend.generate_pdf(invoice_data)
-        backend.save_invoice_number(invoice_num)
-        
-        # Log invoice
-        logs = backend.load_logs()
-        logs.append({
-            "datetime": datetime.now().strftime("%d-%m-%Y %H:%M"),
-            "customer_name": data.get('name', ''),
-            "customer_id": data.get('customer_id', ''),
-            "phone": data.get('phone', ''),
-            "invoice_num": f"TF/25-26/HR/{invoice_num}",
-            "amount": float(data.get('total_amount', 0)),
-            "filename": pdf_filename,
-            "status": data.get('payment_status', 'Unpaid'),
-            "payment_method": data.get('payment_method', 'None') or 'None'
-        })
-        backend.save_logs(logs)
-        
-        # Save customer (only clean customer fields, not invoice fields)
-        if data.get('save_customer'):
-            customer_data = {
-                "name": data.get('name', ''),
-                "customer_id": data.get('customer_id', ''),
-                "tenant_name": data.get('tenant_name', ''),
-                "phone": data.get('phone', ''),
-                "customer_address": data.get('customer_address', ''),
-                "customer_gstin": data.get('customer_gstin', '')
-            }
-            backend.save_customer(customer_data)
-            
-        # Open PDF
-        import webbrowser
-        webbrowser.open(os.path.abspath(os.path.join('output_invoices', pdf_filename)))
-        
-        return {"status": "success", "message": f"Invoice {invoice_num} generated! File saved as {pdf_filename}"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+def get_app_logs():
+    return backend.get_app_logs(150)
 
-@eel.expose
-def get_customer_profile(customer_id):
-    try:
-        customers = backend.load_customers()
-        logs = backend.load_logs()
-        
-        # Find exact customer
-        customer = next((c for c in customers if c.get('customer_id') == customer_id), None)
-        if not customer:
-            return {"status": "error", "message": "Customer not found"}
-            
-        # Filter logs just for this customer (by ID for accuracy)
-        customer_logs = [log for log in logs if str(log.get('customer_id')) == str(customer_id)]
-        
-        # Calculate stats
-        total_paid = sum(float(l.get('amount', 0)) for l in customer_logs if l.get('status') == 'Paid')
-        pending_dues = sum(float(l.get('amount', 0)) for l in customer_logs if l.get('status') != 'Paid')
-        
-        return {
-            "status": "success",
-            "customer": customer,
-            "logs": list(reversed(customer_logs)),
-            "stats": {
-                "total_paid": total_paid,
-                "pending_dues": pending_dues,
-                "total_invoices": len(customer_logs)
-            }
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+# ── AUTO-UPDATE ───────────────────────────────────────────────────────────────
 
 @eel.expose
 def check_for_updates():
-    """Check GitHub for a newer version of the application."""
     repo = "bloodwraith8851/T.F.N-Billing"
-    url = f"https://api.github.com/repos/{repo}/releases/latest"
-    
+    url  = f"https://api.github.com/repos/{repo}/releases/latest"
     try:
-        # Load local version
         version_file = resource_path("version.json")
         if not os.path.exists(version_file):
             return {"status": "error", "message": "version.json not found"}
-            
         with open(version_file, 'r') as f:
             local_version = json.load(f).get("version", "0.0.0")
-        
+
         response = requests.get(url, timeout=10)
-        print(f"DEBUG: GitHub API Status: {response.status_code}")
-        
-        # If no release found, we can't update, but we return status
         if response.status_code == 404:
-            # Check for MOCK mode (only for dev testing)
-            if local_version == "0.9.0":
-                print("DEBUG: Triggering MOCK Update mode...")
-                # Try to find IF there's any release at all to get a real URL
-                return {
-                    "status": "update_available",
-                    "local": local_version,
-                    "latest": "1.0.0 (MOCK)",
-                    "notes": "MOCK UPDATE: Testing the update UI. Note: The download will only work if a v1.0.0 release exists with a 'Setup.exe'.",
-                    "url": f"https://github.com/{repo}/releases/download/v1.0.0/Thunderstorm_Billing_Setup.exe"
-                }
-            print("DEBUG: No release found and version is not 0.9.0.")
-            return {"status": "no_update", "local": local_version, "message": "No releases found on GitHub yet."}
+            return {"status": "no_update", "local": local_version,
+                    "message": "No releases found on GitHub yet."}
 
         if response.status_code == 200:
             latest_release = response.json()
             latest_version = latest_release.get("tag_name", "").replace("v", "")
-            
             if not latest_version:
                 return {"status": "no_update", "local": local_version}
-            
-            # Proper semantic version comparison (handles 1.10.0 > 1.9.0 correctly)
+
             try:
                 latest_tuple = tuple(int(x) for x in latest_version.split('.'))
-                local_tuple = tuple(int(x) for x in local_version.split('.'))
+                local_tuple  = tuple(int(x) for x in local_version.split('.'))
             except ValueError:
-                latest_tuple = (0,)
-                local_tuple = (0,)
+                latest_tuple = local_tuple = (0,)
 
             if latest_tuple > local_tuple:
-                # Find the installer asset - look for ANY .exe if Setup.exe not found
-                assets = latest_release.get("assets", [])
-                installer_url = next((a.get("browser_download_url") for a in assets if "Setup.exe" in a.get("name", "")), None)
-                if not installer_url:
-                    installer_url = next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith(".exe")), None)
-                
-                print(f"DEBUG: Update found! Latest: {latest_version}. URL: {installer_url}")
+                assets       = latest_release.get("assets", [])
+                installer_url = next(
+                    (a.get("browser_download_url") for a in assets if "Setup.exe" in a.get("name","")), None
+                ) or next(
+                    (a.get("browser_download_url") for a in assets if a.get("name","").endswith(".exe")), None
+                )
                 return {
-                    "status": "update_available",
-                    "local": local_version,
-                    "latest": latest_version,
-                    "notes": latest_release.get("body", ""),
-                    "url": installer_url
+                    "status":  "update_available",
+                    "local":   local_version,
+                    "latest":  latest_version,
+                    "notes":   latest_release.get("body", ""),
+                    "url":     installer_url
                 }
-            
+
         return {"status": "no_update", "local": local_version}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @eel.expose
 def download_and_install_update(url):
-    """Download the update and run the installer with improved logging and UI feedback."""
     if not url:
         return {"status": "error", "message": "No download URL provided"}
-        
+
     def _do_update():
         dest_path = ""
         try:
-            temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
+            temp_dir  = os.environ.get("TEMP", os.path.expanduser("~"))
             dest_path = os.path.join(temp_dir, "Thunderstorm_Billing_Update_Setup.exe")
-            
-            print(f"DEBUG: Starting download from {url}")
-            
-            # Use a longer timeout and handle redirects
-            response = requests.get(url, stream=True, timeout=30, allow_redirects=True)
-            response.raise_for_status() # Check for HTTP errors
-            
-            total_size = int(response.headers.get('content-length', 0))
+            response  = requests.get(url, stream=True, timeout=30, allow_redirects=True)
+            response.raise_for_status()
+            total_size     = int(response.headers.get('content-length', 0))
             downloaded_size = 0
-            
             with open(dest_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -384,47 +374,33 @@ def download_and_install_update(url):
                         downloaded_size += len(chunk)
                         if total_size > 0:
                             percent = int((downloaded_size / total_size) * 100)
-                            # Update UI via Eel
                             eel.update_download_status(f"Downloading... {percent}%")
-            
-            print(f"DEBUG: Download completed. Launching installer...")
             eel.update_download_status("Finalizing... Launching Installer")
-            
-            # Launch the installer and exit
             if os.path.exists(dest_path):
                 subprocess.Popen([dest_path], shell=True)
-                time.sleep(1) # Give it a second to start
+                time.sleep(1)
                 os._exit(0)
             else:
                 raise Exception("Downloaded file not found on disk.")
-                
         except Exception as e:
-            msg = str(e)
-            print(f"FATAL UPDATE ERROR: {msg}")
-            # Try to notify the UI of the failure
             try:
-                eel.update_download_status(f"Update Failed: {msg}")
-                # We can also call a specific error handler
-                eel.handle_update_error(msg)
+                eel.update_download_status(f"Update Failed: {e}")
+                eel.handle_update_error(str(e))
             except:
                 pass
-            
+
     threading.Thread(target=_do_update, daemon=True).start()
     return {"status": "success"}
 
+# ── APP START ─────────────────────────────────────────────────────────────────
+
 def start_app():
-    # Application launch options
     try:
-        eel.start('index.html', size=(1200, 800), 
-                  mode='chrome', # Uses Chrome window mode (no tabs/address bar)
-                  host='localhost',
-                  port=0) # Automatic port
+        eel.start('index.html', size=(1280, 820),
+                  mode='chrome', host='localhost', port=0)
     except EnvironmentError:
-        # Fallback to Edge if Chrome is not installed
-        eel.start('index.html', size=(1200, 800), 
-                  mode='edge',
-                  host='localhost',
-                  port=0)
+        eel.start('index.html', size=(1280, 820),
+                  mode='edge',   host='localhost', port=0)
 
 if __name__ == '__main__':
     start_app()

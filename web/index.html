@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thunderstorm Billing</title>
+    <title>Thunderstorm Billing v2.0</title>
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <!-- Flatpickr Datepicker -->
@@ -31,26 +30,27 @@
     <!-- 3D Background Particles Container -->
     <div id="particles-js"></div>
 
-    <!-- Calming Cloud Animations -->
+    <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Notification Panel -->
+    <div id="notification-panel" class="notification-panel hidden">
+        <div class="notif-header">
+            <span><i class="ri-notification-3-line"></i> Recent Activity</span>
+            <button onclick="closeNotifications()" class="notif-close"><i class="ri-close-line"></i></button>
+        </div>
+        <div id="notif-list" class="notif-list">
+            <div class="notif-empty">No recent activity</div>
+        </div>
+    </div>
 
     <div class="clouds-container">
         <div class="moon"></div>
-        <div class="cloud cloud-1">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-2">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-3">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-4">
-            <div class="cloud-body"></div>
-        </div>
-        <div class="cloud cloud-5">
-            <div class="cloud-body"></div>
-        </div>
+        <div class="cloud cloud-1"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-2"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-3"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-4"><div class="cloud-body"></div></div>
+        <div class="cloud cloud-5"><div class="cloud-body"></div></div>
     </div>
 
     <div class="app-container">
@@ -64,39 +64,36 @@
                 <h2>Thunderstorm</h2>
             </div>
 
-            <!-- Sidebar Active Indicator -->
             <div class="nav-indicator" id="nav-indicator"></div>
 
             <ul class="nav-links">
                 <li class="active" data-view="dashboard">
-                    <i class="ri-dashboard-line"></i>
-                    <span>Dashboard</span>
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
                 </li>
                 <li data-view="new-invoice">
-                    <i class="ri-file-add-line"></i>
-                    <span>New Invoice</span>
+                    <i class="ri-file-add-line"></i><span>New Invoice</span>
                 </li>
                 <li data-view="customers">
-                    <i class="ri-team-line"></i>
-                    <span>Customers</span>
+                    <i class="ri-team-line"></i><span>Customers</span>
+                </li>
+                <li data-view="analytics">
+                    <i class="ri-bar-chart-2-line"></i><span>Analytics</span>
                 </li>
                 <li data-view="logs">
-                    <i class="ri-history-line"></i>
-                    <span>Invoice History</span>
+                    <i class="ri-history-line"></i><span>Invoice History</span>
                 </li>
                 <li data-view="settings">
-                    <i class="ri-settings-3-line"></i>
-                    <span>Settings</span>
+                    <i class="ri-settings-3-line"></i><span>Settings</span>
                 </li>
-                <li onclick="checkForUpdates(true)" style="cursor: pointer; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
-                    <i class="ri-refresh-line" style="color: #4A6CFA;"></i>
-                    <span style="color: #4A6CFA; font-weight: 500;">Check for Updates</span>
+                <li onclick="checkForUpdates(true)" style="cursor:pointer;margin-top:20px;border-top:1px solid rgba(255,255,255,0.05);padding-top:15px;">
+                    <i class="ri-refresh-line" style="color:#4A6CFA;"></i>
+                    <span style="color:#4A6CFA;font-weight:500;">Check for Updates</span>
                 </li>
             </ul>
 
             <div class="sidebar-footer">
                 <div class="sidebar-clock" id="sidebar-clock">--:--:--</div>
-                <div class="sidebar-date" id="sidebar-date">---</div>
+                <div class="sidebar-date"  id="sidebar-date">---</div>
                 <div class="user-info">
                     <img src="https://ui-avatars.com/api/?name=Admin&background=ef4444&color=fff" alt="User">
                     <div>
@@ -116,22 +113,23 @@
                     <input type="text" placeholder="Search invoices, customers..." oninput="filterTables(this.value)">
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn"><i class="ri-notification-3-line"></i></button>
+                    <button class="icon-btn notification-btn" id="notif-btn" onclick="toggleNotifications()">
+                        <i class="ri-notification-3-line"></i>
+                        <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+                    </button>
                     <button class="icon-btn theme-toggle" onclick="toggleTheme()"><i class="ri-moon-line"></i></button>
                 </div>
             </header>
 
             <!-- Views Container -->
             <div class="views-container">
-                <!-- Dashboard View -->
-                <section id="dashboard" class="view active-view" style="animation: none;">
+
+                <!-- ================== DASHBOARD ================== -->
+                <section id="dashboard" class="view active-view" style="animation:none;">
                     <div class="view-header">
                         <div>
-                            <p id="dashboard-greeting"
-                                style="font-size:0.85rem; color: var(--text-muted); margin-bottom:4px;">Good Night 🌌
-                            </p>
-                            <h1 style="font-size: 24px; font-weight: 600; color: var(--text-main);">Billing Dashboard
-                            </h1>
+                            <p id="dashboard-greeting" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:4px;">Good Night 🌌</p>
+                            <h1 style="font-size:24px;font-weight:600;color:var(--text-main);">Billing Dashboard</h1>
                         </div>
                     </div>
 
@@ -139,7 +137,7 @@
                         <!-- Main Left Column -->
                         <div class="main-column">
                             <div class="top-cards-row">
-                                <!-- Blue Accent Card (Total Revenue) -->
+                                <!-- Total Revenue -->
                                 <div class="clean-card accent-card">
                                     <div class="card-bg-shape"></div>
                                     <div class="card-content">
@@ -149,16 +147,14 @@
                                     </div>
                                     <i class="ri-star-fill card-icon-top"></i>
                                 </div>
-
-                                <!-- Secondary Card (Pending Amount) -->
+                                <!-- Pending -->
                                 <div class="clean-card secondary-card">
                                     <div class="card-content">
                                         <p class="card-subtitle">Pending Amount</p>
-                                        <h2 id="stat-pending" class="card-title" style="color: #111827;">₹0</h2>
-                                        <p class="card-desc" style="color: #6b7280;">Awaiting payments</p>
+                                        <h2 id="stat-pending" class="card-title" style="color:#111827;">₹0</h2>
+                                        <p class="card-desc" style="color:#6b7280;">Awaiting payments</p>
                                     </div>
-                                    <div class="card-icon-round"
-                                        style="background: rgba(255,193,7,0.1); color: #ffc107;">
+                                    <div class="card-icon-round" style="background:rgba(255,193,7,0.1);color:#ffc107;">
                                         <i class="ri-bank-card-line"></i>
                                     </div>
                                 </div>
@@ -169,18 +165,22 @@
                                 <h3 class="section-title">Payment history</h3>
                                 <div class="clean-table-responsive">
                                     <table id="recent-table" class="minimal-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Invoice No</th>
-                                                <th>Customer</th>
-                                                <th>Amount</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="recent-tbody">
-                                            <!-- Populated via JS -->
-                                        </tbody>
+                                        <thead><tr>
+                                            <th>Invoice No</th><th>Customer</th><th>Amount</th><th>Status</th>
+                                        </tr></thead>
+                                        <tbody id="recent-tbody"></tbody>
                                     </table>
+                                </div>
+                            </div>
+
+                            <!-- Outstanding Dues Panel -->
+                            <div class="clean-card outstanding-card" style="margin-top:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 class="section-title" style="margin:0;"><i class="ri-alarm-warning-line" style="color:#ff3b30;margin-right:8px;"></i>Outstanding Dues</h3>
+                                    <span id="outstanding-count" class="outstanding-badge">0</span>
+                                </div>
+                                <div id="outstanding-list" class="outstanding-list">
+                                    <p style="color:var(--text-muted);text-align:center;padding:20px 0;font-size:0.9rem;">All invoices are paid ✓</p>
                                 </div>
                             </div>
                         </div>
@@ -190,31 +190,48 @@
                             <!-- Received Card -->
                             <div class="clean-card white-card side-stat">
                                 <p class="card-subtitle">Total Received</p>
-                                <h2 id="stat-paid" class="card-title" style="color: #111827;">₹0</h2>
+                                <h2 id="stat-paid" class="card-title" style="color:#111827;">₹0</h2>
                                 <i class="ri-checkbox-circle-fill side-icon"></i>
+                            </div>
+
+                            <!-- Collection Rate KPI -->
+                            <div class="clean-card white-card collection-rate-card">
+                                <p class="card-subtitle">Collection Rate</p>
+                                <div class="rate-ring-wrap">
+                                    <svg class="rate-ring" viewBox="0 0 80 80">
+                                        <circle class="rate-ring-bg" cx="40" cy="40" r="34" />
+                                        <circle class="rate-ring-fill" id="rate-ring-fill" cx="40" cy="40" r="34"
+                                            stroke-dasharray="213.6" stroke-dashoffset="213.6" />
+                                    </svg>
+                                    <span id="stat-rate" class="rate-number">0%</span>
+                                </div>
+                                <p style="font-size:0.75rem;color:var(--text-muted);text-align:center;margin-top:6px;">This month</p>
                             </div>
 
                             <!-- Payment Status Chart -->
                             <div class="clean-card white-card chart-card">
-                                <h3 class="section-title" style="margin-bottom: 20px;">Payment Status</h3>
+                                <h3 class="section-title" style="margin-bottom:20px;">Payment Status</h3>
                                 <div class="chart-wrapper">
                                     <canvas id="statusChart"></canvas>
                                 </div>
                             </div>
 
-                            <!-- Hidden Line Chart Element for JS Compatibility -->
-                            <div style="display: none;">
-                                <canvas id="revenueChart"></canvas>
-                            </div>
+                            <div style="display:none;"><canvas id="revenueChart"></canvas></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- New Invoice View -->
+                <!-- ================== NEW INVOICE ================== -->
                 <section id="new-invoice" class="view hidden-view">
-                    <div class="view-header">
-                        <h1>Create Invoice</h1>
+                    <div class="view-header"><h1>Create Invoice</h1></div>
+
+                    <!-- Duplicate warning banner (hidden by default) -->
+                    <div id="duplicate-warning" class="duplicate-banner" style="display:none;">
+                        <i class="ri-error-warning-line"></i>
+                        <span id="duplicate-warning-text">A duplicate invoice may already exist for this customer and period.</span>
+                        <button onclick="hideDuplicateWarning()" style="background:transparent;border:none;color:inherit;cursor:pointer;font-size:1.1rem;">✕</button>
                     </div>
+
                     <form id="invoiceForm" class="glass-form animated-entry">
                         <div class="form-section">
                             <h3>1. Select/Enter Customer</h3>
@@ -227,30 +244,12 @@
                                 </div>
                             </div>
                             <div class="form-group grid-2">
-                                <div class="col">
-                                    <label>Name</label>
-                                    <input type="text" id="inv-name" required>
-                                </div>
-                                <div class="col">
-                                    <label>Customer ID</label>
-                                    <input type="text" id="inv-customer_id" required>
-                                </div>
-                                <div class="col">
-                                    <label>Tenant Name</label>
-                                    <input type="text" id="inv-tenant_name">
-                                </div>
-                                <div class="col">
-                                    <label>Registered Phone No</label>
-                                    <input type="tel" id="inv-phone" placeholder="e.g. 918851624488" required>
-                                </div>
-                                <div class="col">
-                                    <label>Customer GSTIN</label>
-                                    <input type="text" id="inv-customer_gstin">
-                                </div>
-                                <div class="col full-width">
-                                    <label>Customer Address</label>
-                                    <input type="text" id="inv-customer_address" required>
-                                </div>
+                                <div class="col"><label>Name</label><input type="text" id="inv-name" required></div>
+                                <div class="col"><label>Customer ID</label><input type="text" id="inv-customer_id" required></div>
+                                <div class="col"><label>Tenant Name</label><input type="text" id="inv-tenant_name"></div>
+                                <div class="col"><label>Registered Phone No</label><input type="tel" id="inv-phone" placeholder="e.g. 918851624488" required></div>
+                                <div class="col"><label>Customer GSTIN</label><input type="text" id="inv-customer_gstin"></div>
+                                <div class="col full-width"><label>Customer Address</label><input type="text" id="inv-customer_address" required></div>
                             </div>
                         </div>
 
@@ -267,24 +266,12 @@
                                         <option value="500 MBPS UNL">500 MBPS UNL</option>
                                     </select>
                                 </div>
-                                <div class="col">
-                                    <label>Months</label>
-                                    <input type="number" id="inv-months" value="1" min="1">
-                                </div>
-                                <div class="col">
-                                    <label>Billing Period From</label>
-                                    <input type="date" id="inv-billing_from" required>
-                                </div>
-                                <div class="col">
-                                    <label>Billing Period To</label>
-                                    <input type="date" id="inv-billing_to" required>
-                                </div>
+                                <div class="col"><label>Months</label><input type="number" id="inv-months" value="1" min="1"></div>
+                                <div class="col"><label>Billing Period From</label><input type="date" id="inv-billing_from" required></div>
+                                <div class="col"><label>Billing Period To</label><input type="date" id="inv-billing_to" required></div>
                                 <div class="col">
                                     <label>Total Amount (Inc. GST)</label>
-                                    <div class="input-with-icon">
-                                        <i>₹</i>
-                                        <input type="number" step="0.01" id="inv-total_amount" required>
-                                    </div>
+                                    <div class="input-with-icon"><i>₹</i><input type="number" step="0.01" id="inv-total_amount" required></div>
                                 </div>
                             </div>
                         </div>
@@ -292,18 +279,9 @@
                         <div class="form-section">
                             <h3>3. Additional Details</h3>
                             <div class="form-group grid-3">
-                                <div class="col">
-                                    <label>Discount</label>
-                                    <input type="number" step="0.01" id="inv-discount" value="0">
-                                </div>
-                                <div class="col">
-                                    <label>Late Fee</label>
-                                    <input type="number" step="0.01" id="inv-late_fee" value="0">
-                                </div>
-                                <div class="col">
-                                    <label>Notes</label>
-                                    <input type="text" id="inv-notes">
-                                </div>
+                                <div class="col"><label>Discount</label><input type="number" step="0.01" id="inv-discount" value="0"></div>
+                                <div class="col"><label>Late Fee</label><input type="number" step="0.01" id="inv-late_fee" value="0"></div>
+                                <div class="col"><label>Notes</label><input type="text" id="inv-notes"></div>
                                 <div class="col">
                                     <label>Payment Status</label>
                                     <select id="inv-payment_status">
@@ -338,11 +316,16 @@
                     </form>
                 </section>
 
-                <!-- Customers View -->
+                <!-- ================== CUSTOMERS ================== -->
                 <section id="customers" class="view hidden-view">
                     <div class="view-header">
                         <h2>Customer Directory</h2>
                         <div class="header-actions">
+                            <!-- Hidden file input for CSV import -->
+                            <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleCSVImport(this)">
+                            <button class="btn btn-secondary" onclick="document.getElementById('csv-file-input').click()">
+                                <i class="ri-upload-2-line"></i> Import CSV
+                            </button>
                             <button class="btn btn-secondary" onclick="exportCustomers()">
                                 <i class="ri-file-excel-line"></i> Export CSV
                             </button>
@@ -351,100 +334,114 @@
                             </button>
                         </div>
                     </div>
-                    <div class="clean-table-section animated-entry" style="animation-delay: 0.1s">
+
+                    <!-- Customer Search & Filter -->
+                    <div class="filters-card animated-entry">
+                        <div class="search-group">
+                            <i class="ri-search-line"></i>
+                            <input type="text" id="customer-search" placeholder="Search by name, ID, phone...">
+                        </div>
+                        <select id="customer-status-filter">
+                            <option value="All">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Suspended">Suspended</option>
+                            <option value="Terminated">Terminated</option>
+                        </select>
+                    </div>
+
+                    <div class="clean-table-section animated-entry" style="animation-delay:0.1s">
                         <div class="clean-table-responsive">
                             <table id="customers-table" class="minimal-table">
-                                <thead>
-                                    <tr>
-                                        <th>Customer Details</th>
-                                        <th>Customer ID</th>
-                                        <th>Phone No</th>
-                                        <th>Tenant</th>
-                                        <th>Address</th>
-                                        <th>GSTIN</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="customers-tbody">
-                                </tbody>
+                                <thead><tr>
+                                    <th>Customer Details</th>
+                                    <th>Customer ID</th>
+                                    <th>Phone No</th>
+                                    <th>Tenant</th>
+                                    <th>Address</th>
+                                    <th>Status</th>
+                                    <th>Tags</th>
+                                </tr></thead>
+                                <tbody id="customers-tbody"></tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- Settings View -->
-                <section id="settings" class="view hidden-view">
+                <!-- ================== ANALYTICS ================== -->
+                <section id="analytics" class="view hidden-view">
                     <div class="view-header">
-                        <h1>Settings</h1>
+                        <h1>Analytics</h1>
                     </div>
+                    <div class="analytics-grid">
+                        <!-- Monthly Revenue Bar Chart -->
+                        <div class="clean-card white-card analytics-chart-card animated-entry">
+                            <h3 class="section-title" style="margin-bottom:20px;">
+                                <i class="ri-bar-chart-2-line" style="color:#6366f1;margin-right:8px;"></i>
+                                Monthly Revenue (Last 6 Months)
+                            </h3>
+                            <div style="position:relative;height:260px;">
+                                <canvas id="monthlyRevenueChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Plan Breakdown Donut -->
+                        <div class="clean-card white-card analytics-chart-card animated-entry" style="animation-delay:0.1s;">
+                            <h3 class="section-title" style="margin-bottom:20px;">
+                                <i class="ri-donut-chart-line" style="color:#34d399;margin-right:8px;"></i>
+                                Plan Breakdown
+                            </h3>
+                            <div style="position:relative;height:260px;">
+                                <canvas id="planBreakdownChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================== SETTINGS ================== -->
+                <section id="settings" class="view hidden-view">
+                    <div class="view-header"><h1>Settings</h1></div>
 
                     <!-- Company Profile -->
                     <div class="settings-card animated-entry">
                         <div class="settings-section-header">
-                            <i class="ri-building-line"></i>
-                            <h3>Company Profile</h3>
+                            <i class="ri-building-line"></i><h3>Company Profile</h3>
                         </div>
                         <div class="settings-grid">
-                            <div class="settings-field full-width">
-                                <label>Company Name</label>
-                                <input type="text" id="s-company_name" class="settings-input" placeholder="e.g. THUNDERSTORM FIBERNET">
-                            </div>
-                            <div class="settings-field full-width">
-                                <label>Company Address</label>
-                                <input type="text" id="s-company_address" class="settings-input" placeholder="Full address">
-                            </div>
-                            <div class="settings-field">
-                                <label>GSTIN</label>
-                                <input type="text" id="s-company_gstin" class="settings-input" placeholder="e.g. 06DJVPP9834G1ZD">
-                            </div>
-                            <div class="settings-field">
-                                <label>Phone Number</label>
-                                <input type="text" id="s-company_phone" class="settings-input" placeholder="e.g. 8585986890">
-                            </div>
-                            <div class="settings-field">
-                                <label>Email</label>
-                                <input type="text" id="s-company_email" class="settings-input" placeholder="e.g. info@company.com">
-                            </div>
-                            <div class="settings-field">
-                                <label>Place of Supply (State)</label>
-                                <input type="text" id="s-place_of_supply" class="settings-input" placeholder="e.g. Haryana">
-                            </div>
+                            <div class="settings-field full-width"><label>Company Name</label><input type="text" id="s-company_name" class="settings-input" placeholder="e.g. THUNDERSTORM FIBERNET"></div>
+                            <div class="settings-field full-width"><label>Company Address</label><input type="text" id="s-company_address" class="settings-input" placeholder="Full address"></div>
+                            <div class="settings-field"><label>GSTIN</label><input type="text" id="s-company_gstin" class="settings-input"></div>
+                            <div class="settings-field"><label>Phone Number</label><input type="text" id="s-company_phone" class="settings-input"></div>
+                            <div class="settings-field"><label>Email</label><input type="text" id="s-company_email" class="settings-input"></div>
+                            <div class="settings-field"><label>Place of Supply (State)</label><input type="text" id="s-place_of_supply" class="settings-input"></div>
                         </div>
                     </div>
 
                     <!-- Invoice Settings -->
-                    <div class="settings-card animated-entry" style="animation-delay: 0.1s">
+                    <div class="settings-card animated-entry" style="animation-delay:0.1s">
                         <div class="settings-section-header">
-                            <i class="ri-file-text-line"></i>
-                            <h3>Invoice Settings</h3>
+                            <i class="ri-file-text-line"></i><h3>Invoice Settings</h3>
                         </div>
                         <div class="settings-grid">
-                            <div class="settings-field">
-                                <label>GST Rate (each of CGST &amp; SGST, %)</label>
-                                <input type="number" id="s-gst_rate" class="settings-input" step="0.5" min="0" max="28" placeholder="e.g. 9">
-                            </div>
-                            <div class="settings-field">
-                                <label>Invoice Number Prefix</label>
-                                <input type="text" id="s-invoice_prefix" class="settings-input" placeholder="e.g. TF/25-26/HR/">
-                            </div>
+                            <div class="settings-field"><label>GST Rate (each of CGST &amp; SGST, %)</label><input type="number" id="s-gst_rate" class="settings-input" step="0.5" min="0" max="28" placeholder="e.g. 9"></div>
+                            <div class="settings-field"><label>Invoice Number Prefix</label><input type="text" id="s-invoice_prefix" class="settings-input" placeholder="e.g. TF/25-26/HR/"></div>
                         </div>
-                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-highlight);">
-                            <button class="btn btn-secondary" onclick="doResetCounter()" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">
+                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-highlight);">
+                            <button class="btn btn-secondary" onclick="doResetCounter()" style="color:#ef4444;border-color:rgba(239,68,68,0.3);">
                                 <i class="ri-refresh-line"></i> Reset Invoice Counter
                             </button>
-                            <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 12px;">Resets to invoice #2059</span>
+                            <span style="font-size:0.8rem;color:var(--text-muted);margin-left:12px;">Resets to invoice #2059</span>
                         </div>
                     </div>
 
                     <!-- Appearance -->
-                    <div class="settings-card animated-entry" style="animation-delay: 0.15s">
+                    <div class="settings-card animated-entry" style="animation-delay:0.15s">
                         <div class="settings-section-header">
-                            <i class="ri-palette-line"></i>
-                            <h3>Appearance</h3>
+                            <i class="ri-palette-line"></i><h3>Appearance</h3>
                         </div>
                         <div class="settings-row">
                             <div>
-                                <p style="font-weight: 500; color: var(--text-main);">Theme</p>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Switch between dark and light mode</p>
+                                <p style="font-weight:500;color:var(--text-main);">Theme</p>
+                                <p style="font-size:0.85rem;color:var(--text-muted);">Switch between dark and light mode</p>
                             </div>
                             <button class="btn btn-secondary" onclick="toggleTheme()" id="theme-toggle-btn">
                                 <i class="ri-moon-line" id="settings-theme-icon"></i> Toggle Theme
@@ -453,16 +450,15 @@
                     </div>
 
                     <!-- About -->
-                    <div class="settings-card animated-entry" style="animation-delay: 0.2s">
+                    <div class="settings-card animated-entry" style="animation-delay:0.2s">
                         <div class="settings-section-header">
-                            <i class="ri-information-line"></i>
-                            <h3>About</h3>
+                            <i class="ri-information-line"></i><h3>About</h3>
                         </div>
                         <div class="settings-row">
                             <div>
-                                <p style="font-weight: 500; color: var(--text-main);">Thunderstorm Billing</p>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Version: <strong id="s-version">...</strong></p>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">© 2025 Thunderstorm Fibernet. All rights reserved.</p>
+                                <p style="font-weight:500;color:var(--text-main);">Thunderstorm Billing</p>
+                                <p style="font-size:0.85rem;color:var(--text-muted);">Version: <strong id="s-version">...</strong></p>
+                                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">© 2025-2026 Thunderstorm Fibernet. All rights reserved.</p>
                             </div>
                             <button class="btn btn-secondary" onclick="checkForUpdates(true)">
                                 <i class="ri-refresh-line"></i> Check for Updates
@@ -470,13 +466,31 @@
                         </div>
                     </div>
 
+                    <!-- App Logs -->
+                    <div class="settings-card animated-entry" style="animation-delay:0.25s">
+                        <div class="settings-section-header">
+                            <i class="ri-terminal-line"></i><h3>App Logs</h3>
+                        </div>
+                        <div style="margin-bottom:12px;display:flex;gap:10px;">
+                            <button class="btn btn-secondary" onclick="loadAppLogs()" style="font-size:0.85rem;">
+                                <i class="ri-refresh-line"></i> Refresh Logs
+                            </button>
+                            <span style="font-size:0.8rem;color:var(--text-muted);line-height:2.5;">Last 150 lines of tfn_billing_debug.log</span>
+                        </div>
+                        <div id="log-viewer" class="log-viewer">
+                            <span style="color:var(--text-muted);">Click Refresh Logs to load.</span>
+                        </div>
+                    </div>
+
                     <!-- Save Button -->
-                    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-                        <button class="btn btn-primary" onclick="saveSettings()" style="padding: 12px 32px; font-size: 1rem;">
+                    <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                        <button class="btn btn-primary" onclick="saveSettings()" style="padding:12px 32px;font-size:1rem;">
                             <i class="ri-save-line"></i> Save Settings
                         </button>
                     </div>
                 </section>
+
+                <!-- ================== INVOICE HISTORY ================== -->
                 <section id="logs" class="view hidden-view">
                     <div class="view-header">
                         <h2>Invoice History</h2>
@@ -496,119 +510,114 @@
                             <option value="Unpaid">Unpaid</option>
                             <option value="Partial">Partial</option>
                         </select>
+                        <input type="date" id="log-date-from" title="Date From" style="background:var(--card-bg);border:1px solid var(--border-highlight);color:var(--text-main);padding:8px 12px;border-radius:8px;font-size:0.85rem;">
+                        <input type="date" id="log-date-to"   title="Date To"   style="background:var(--card-bg);border:1px solid var(--border-highlight);color:var(--text-main);padding:8px 12px;border-radius:8px;font-size:0.85rem;">
                     </div>
 
-                    <div class="clean-table-section animated-entry" style="animation-delay: 0.1s">
+                    <div class="clean-table-section animated-entry" style="animation-delay:0.1s">
                         <div class="clean-table-responsive">
                             <table id="logs-table" class="minimal-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Invoice No</th>
-                                        <th>Customer</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Payment</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="logs-tbody">
-                                </tbody>
+                                <thead><tr>
+                                    <th>Date</th><th>Invoice No</th><th>Customer</th>
+                                    <th>Amount</th><th>Status</th><th>Payment</th><th>Actions</th>
+                                </tr></thead>
+                                <tbody id="logs-tbody"></tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- Customer Profile View -->
+                <!-- ================== CUSTOMER PROFILE ================== -->
                 <section id="customer-profile" class="view hidden-view">
-                    <div class="view-header"
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                        <h1 style="font-size: 24px; font-weight: 600; color: #111827;">Customer Profile</h1>
-                        <button class="btn btn-secondary" onclick="window.switchView('customers')"><i
-                                class="ri-arrow-left-line"></i> Back</button>
+                    <div class="view-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                        <h1 style="font-size:24px;font-weight:600;color:var(--text-main);">Customer Profile</h1>
+                        <button class="btn btn-secondary" onclick="window.switchView('customers')"><i class="ri-arrow-left-line"></i> Back</button>
                     </div>
 
                     <div class="dashboard-layout">
-                        <!-- Left Side: Profile & Stats -->
+                        <!-- Left: Profile & Stats -->
                         <div class="side-column">
-                            <div class="clean-card white-card" style="text-align: center; padding: 40px 24px;">
-                                <div id="cp-avatar"
-                                    style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent-blue); color: #fff; font-size: 2rem; font-weight: 600; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                                    --</div>
-                                <h2 id="cp-name"
-                                    style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 4px;">Loading...
-                                </h2>
-                                <p id="cp-id" style="color: var(--text-muted); margin-bottom: 24px;">--</p>
+                            <div class="clean-card white-card" style="text-align:center;padding:32px 24px;">
+                                <div id="cp-avatar" style="width:80px;height:80px;border-radius:50%;background:var(--accent-blue,#6366f1);color:#fff;font-size:2rem;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">--</div>
+                                <h2 id="cp-name" style="font-size:1.5rem;color:var(--text-main);margin-bottom:4px;">Loading...</h2>
+                                <p id="cp-id" style="color:var(--text-muted);margin-bottom:8px;">--</p>
+                                <p id="cp-status-badge" style="margin-bottom:20px;"></p>
 
-                                <div
-                                    style="text-align: left; padding-top: 24px; border-top: 1px solid var(--border-highlight);">
-                                    <div style="margin-bottom: 16px;">
-                                        <p
-                                            style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
-                                            Phone / WhatsApp</p>
-                                        <p id="cp-phone" style="font-weight: 500; color: var(--text-main);">--</p>
+                                <div style="text-align:left;padding-top:20px;border-top:1px solid var(--border-highlight);">
+                                    <div style="margin-bottom:14px;">
+                                        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:4px;">Phone / WhatsApp</p>
+                                        <p id="cp-phone" style="font-weight:500;color:var(--text-main);">--</p>
                                     </div>
-                                    <div style="margin-bottom: 16px;">
-                                        <p
-                                            style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
-                                            Address</p>
-                                        <p id="cp-address" style="font-weight: 500; color: var(--text-main);">--</p>
+                                    <div style="margin-bottom:14px;">
+                                        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:4px;">Address</p>
+                                        <p id="cp-address" style="font-weight:500;color:var(--text-main);">--</p>
+                                    </div>
+                                    <div style="margin-bottom:14px;">
+                                        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:4px;">GSTIN</p>
+                                        <p id="cp-gstin" style="font-weight:500;color:var(--text-main);">--</p>
+                                    </div>
+                                    <div style="margin-bottom:14px;">
+                                        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:4px;">Tags</p>
+                                        <p id="cp-tags-display" style="font-weight:500;color:var(--text-main);">--</p>
                                     </div>
                                     <div>
-                                        <p
-                                            style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
-                                            GSTIN</p>
-                                        <p id="cp-gstin" style="font-weight: 500; color: var(--text-main);">--</p>
+                                        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:4px;">Notes</p>
+                                        <p id="cp-notes-display" style="font-weight:400;color:var(--text-muted);font-size:0.9rem;">--</p>
                                     </div>
+                                </div>
+
+                                <!-- Edit Notes Form -->
+                                <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-highlight);text-align:left;">
+                                    <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:10px;">Edit Customer Info</p>
+                                    <select id="cp-edit-status" class="custom-select" style="margin-bottom:8px;width:100%;">
+                                        <option value="Active">Active</option>
+                                        <option value="Suspended">Suspended</option>
+                                        <option value="Terminated">Terminated</option>
+                                    </select>
+                                    <input type="text" id="cp-edit-tags" placeholder="Tags (comma separated)" style="width:100%;margin-bottom:8px;padding:8px 12px;background:var(--card-bg);border:1px solid var(--border-highlight);border-radius:8px;color:var(--text-main);font-size:0.85rem;">
+                                    <textarea id="cp-edit-notes" placeholder="Notes..." rows="3" style="width:100%;padding:8px 12px;background:var(--card-bg);border:1px solid var(--border-highlight);border-radius:8px;color:var(--text-main);font-size:0.85rem;resize:vertical;"></textarea>
+                                    <button class="btn btn-primary" onclick="saveCustomerNotes()" style="width:100%;margin-top:8px;font-size:0.88rem;">
+                                        <i class="ri-save-line"></i> Save Changes
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right Side: Analytics & History -->
+                        <!-- Right: Analytics & History -->
                         <div class="main-column">
-                            <div class="top-cards-row" style="grid-template-columns: repeat(3, 1fr);">
-                                <div class="clean-card accent-card" style="padding: 24px; position: relative;">
-                                    <p class="card-subtitle" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
-                                        Lifetime Value (Paid)</p>
-                                    <h2 id="cp-ltv" class="card-title" style="font-size: 1.8rem;">₹0</h2>
+                            <div class="top-cards-row" style="grid-template-columns:repeat(3,1fr);">
+                                <div class="clean-card accent-card" style="padding:24px;position:relative;">
+                                    <p class="card-subtitle" style="color:rgba(255,255,255,0.8);font-size:0.85rem;">Lifetime Value (Paid)</p>
+                                    <h2 id="cp-ltv" class="card-title" style="font-size:1.8rem;">₹0</h2>
                                 </div>
-                                <div class="clean-card secondary-card" style="padding: 24px;">
-                                    <p class="card-subtitle" style="font-size: 0.85rem;">Pending Dues</p>
-                                    <h2 id="cp-pending" class="card-title" style="color: #111827; font-size: 1.8rem;">₹0
-                                    </h2>
+                                <div class="clean-card secondary-card" style="padding:24px;">
+                                    <p class="card-subtitle" style="font-size:0.85rem;">Pending Dues</p>
+                                    <h2 id="cp-pending" class="card-title" style="color:#111827;font-size:1.8rem;">₹0</h2>
                                 </div>
-                                <div class="clean-card white-card" style="padding: 24px;">
-                                    <p class="card-subtitle" style="font-size: 0.85rem;">Total Invoices</p>
-                                    <h2 id="cp-count" class="card-title" style="color: #111827; font-size: 1.8rem;">0
-                                    </h2>
+                                <div class="clean-card white-card" style="padding:24px;">
+                                    <p class="card-subtitle" style="font-size:0.85rem;">Total Invoices</p>
+                                    <h2 id="cp-count" class="card-title" style="color:#111827;font-size:1.8rem;">0</h2>
                                 </div>
                             </div>
 
-                            <div class="clean-table-section" style="margin-top: 24px;">
-                                <h3 class="section-title">Specific Invoice History</h3>
+                            <div class="clean-table-section" style="margin-top:24px;">
+                                <h3 class="section-title">Invoice History</h3>
                                 <div class="clean-table-responsive">
                                     <table class="minimal-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Invoice No</th>
-                                                <th>Amount</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="cp-logs-tbody">
-                                            <!-- Hydrated by JS -->
-                                        </tbody>
+                                        <thead><tr>
+                                            <th>Date</th><th>Invoice No</th><th>Amount</th><th>Status</th><th>Action</th>
+                                        </tr></thead>
+                                        <tbody id="cp-logs-tbody"></tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
-            </div>
+
+            </div><!-- /views-container -->
         </main>
-    </div>
+    </div><!-- /app-container -->
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -616,5 +625,4 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="/static/script.js"></script>
 </body>
-
 </html>

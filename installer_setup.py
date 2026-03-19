@@ -177,7 +177,7 @@ def _create_shortcut(target_dir: str):
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 _EEL_START_OPTS = dict(
-    size=(820, 620),
+    size=(900, 640),
     disable_cache=True,
     block=True,
 )
