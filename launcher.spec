@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 # launcher.spec  —  T.F.N Billing v2.0
 import os
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_all, copy_metadata
 
 block_cipher = None
 
@@ -13,6 +13,16 @@ datas = [
 
 # Eel ships template files that must be bundled
 datas += collect_data_files('eel')
+
+# NumPy 2.x stores __version__ in its dist-info METADATA folder — must use
+# copy_metadata() so importlib.metadata.version('numpy') resolves at runtime.
+datas += copy_metadata('numpy')
+datas += copy_metadata('pandas')
+datas += copy_metadata('pyinstaller')
+
+# collect_all pulls in numpy binary extensions + data files
+tmp_ret = collect_all('numpy')
+datas    += tmp_ret[0]
 
 a = Analysis(
     ['launcher.py'],
@@ -62,7 +72,6 @@ a = Analysis(
         'matplotlib',
         'ttkbootstrap',
         'scipy',
-        'numpy',
         'tkinter.test',
     ],
     win_no_prefer_redirects=False,

@@ -1,5 +1,23 @@
 import os
 import sys
+
+# ── NumPy __version__ safety shim ─────────────────────────────────────────────
+# PyInstaller + NumPy 2.x: dist-info METADATA is sometimes not findable at
+# runtime, causing "module 'numpy' has no attribute '__version__'".
+# Patch it before any other import touches numpy.
+try:
+    import numpy as _np
+    if not hasattr(_np, '__version__'):
+        try:
+            import importlib.metadata as _meta
+            _np.__version__ = _meta.version('numpy')
+        except Exception:
+            _np.__version__ = '2.0.0'   # safe fallback
+    del _np
+except Exception:
+    pass
+# ──────────────────────────────────────────────────────────────────────────────
+
 import subprocess
 import tkinter as tk
 from tkinter import messagebox
