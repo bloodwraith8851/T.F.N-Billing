@@ -29,11 +29,18 @@ wheels/
 # Installer files
 Thunderstorm_Billing_Setup.exe
 
-# Data files (Exclude local databases/logs)
+# Data files (Exclude local databases/logs/exports)
 output_invoices/
+exports/
+backups/
+logs/
+billing.db
 customers.json
 invoice_log.json
 invoice_tracker.json
+users.json
+settings.json
+tfn_billing_debug.log
 *.log
 *.bak
 

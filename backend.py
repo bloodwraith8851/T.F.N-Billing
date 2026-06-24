@@ -53,14 +53,73 @@ PLANS = [
 ]
 
 # ================================================================
-# FILE PATHS
+# FILE PATHS & MIGRATION
 # ================================================================
 
-DB_FILE          = "billing.db"
-TRACKER_FILE     = "invoice_tracker.json"
-INVOICE_LOG_FILE = "invoice_log.json"   # legacy – migration source only
-CUSTOMERS_FILE   = "customers.json"     # legacy – migration source only
-SETTINGS_FILE    = "settings.json"
+DATA_DIR = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'ThunderstormBilling')
+
+DB_FILE          = os.path.join(DATA_DIR, "billing.db")
+TRACKER_FILE     = os.path.join(DATA_DIR, "invoice_tracker.json")
+INVOICE_LOG_FILE = os.path.join(DATA_DIR, "invoice_log.json")   # legacy – migration source only
+CUSTOMERS_FILE   = os.path.join(DATA_DIR, "customers.json")     # legacy – migration source only
+SETTINGS_FILE    = os.path.join(DATA_DIR, "settings.json")
+USERS_FILE       = os.path.join(DATA_DIR, "users.json")
+
+OUTPUT_DIR       = os.path.join(DATA_DIR, "output_invoices")
+BACKUPS_DIR      = os.path.join(DATA_DIR, "backups")
+EXPORTS_DIR      = os.path.join(DATA_DIR, "exports")
+
+def init_data_directories():
+    for d in [DATA_DIR, OUTPUT_DIR, BACKUPS_DIR, EXPORTS_DIR]:
+        os.makedirs(d, exist_ok=True)
+
+def initialize_default_files():
+    # Initialize default json files if they don't exist
+    db_files = {
+        USERS_FILE: '[{"username": "admin", "password": "admin", "role": "admin"}]',
+        CUSTOMERS_FILE: '[]',
+        TRACKER_FILE: '{"last_invoice_number": 2058}',
+        INVOICE_LOG_FILE: '[]'
+    }
+    for filename, content in db_files.items():
+        if not os.path.exists(filename):
+            with open(filename, 'w') as f:
+                f.write(content)
+
+def migrate_legacy_data(legacy_dir):
+    """Safely migrate user data from the executable directory to DATA_DIR."""
+    init_data_directories()
+    
+    files_to_move = ["billing.db", "invoice_tracker.json", "customers.json", "invoice_log.json", "users.json", "settings.json", "tfn_billing_debug.log"]
+    dirs_to_move = ["output_invoices", "backups", "exports"]
+    
+    for f in files_to_move:
+        src = os.path.join(legacy_dir, f)
+        dst = os.path.join(DATA_DIR, f)
+        if os.path.exists(src) and not os.path.exists(dst):
+            try:
+                shutil.copy2(src, dst)
+                logger.info(f"Migrated {f} to {dst}")
+            except Exception as e:
+                logger.error(f"Failed to migrate {f}: {e}")
+                
+    for d in dirs_to_move:
+        src_d = os.path.join(legacy_dir, d)
+        dst_d = os.path.join(DATA_DIR, d)
+        if os.path.exists(src_d):
+            try:
+                for item in os.listdir(src_d):
+                    s = os.path.join(src_d, item)
+                    d_item = os.path.join(dst_d, item)
+                    if not os.path.exists(d_item):
+                        if os.path.isfile(s):
+                            shutil.copy2(s, d_item)
+                logger.info(f"Migrated directory contents for {d}")
+            except Exception as e:
+                logger.error(f"Failed to migrate dir {d}: {e}")
+                
+    # After migration finishes, generate any missing defaults
+    initialize_default_files()
 
 DEFAULT_SETTINGS = {
     "company_name":    "THUNDERSTORM FIBERNET",
@@ -506,12 +565,135 @@ def get_collection_rate():
             "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=? AND status='Paid'",
             (month_str,)
         )
-        paid = c.fetchone()[0]
-        conn.close()
         return round((paid / total) * 100, 1)
     except Exception as e:
         logger.error(f"get_collection_rate error: {e}")
         return 0.0
+
+# ================================================================
+# DATE FILTERED ANALYTICS
+# ================================================================
+
+def _get_date_filter_sql():
+    # Helper: Converts "DD-MM-YYYY HH:MM" to "YYYY-MM-DD" for comparison
+    return "substr(datetime,7,4)||'-'||substr(datetime,4,2)||'-'||substr(datetime,1,2)"
+
+def get_dashboard_stats_filtered(date_from, date_to):
+    """Get revenue stats filtered by date range (YYYY-MM-DD)"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        sql_date = _get_date_filter_sql()
+        
+        c.execute(f"SELECT COALESCE(SUM(amount),0) FROM invoice_log WHERE {sql_date} BETWEEN ? AND ?", (date_from, date_to))
+        total_amount = float(c.fetchone()[0])
+        
+        c.execute(f"SELECT COALESCE(SUM(amount),0) FROM invoice_log WHERE status IN ('Paid','Partial') AND {sql_date} BETWEEN ? AND ?", (date_from, date_to))
+        paid_amount = float(c.fetchone()[0])
+        
+        c.execute(f"SELECT COUNT(*) FROM invoice_log WHERE {sql_date} BETWEEN ? AND ?", (date_from, date_to))
+        invoice_count = c.fetchone()[0]
+        
+        conn.close()
+        pending = total_amount - paid_amount
+        return {
+            "revenue": total_amount,
+            "paid": paid_amount,
+            "pending": pending,
+            "invoice_count": invoice_count
+        }
+    except Exception as e:
+        logger.error(f"get_dashboard_stats_filtered error: {e}")
+        return {"revenue": 0, "paid": 0, "pending": 0, "invoice_count": 0}
+
+def get_monthly_revenue_filtered(date_from, date_to):
+    """Groups revenue by day or month within the selected date range."""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        sql_date = _get_date_filter_sql()
+        
+        from datetime import datetime
+        d1 = datetime.strptime(date_from, "%Y-%m-%d")
+        d2 = datetime.strptime(date_to, "%Y-%m-%d")
+        days_diff = (d2 - d1).days
+        
+        if days_diff <= 31:
+            group_sql = f"{sql_date} as ym"
+        else:
+            group_sql = "substr(datetime,7,4)||'-'||substr(datetime,4,2) as ym"
+        
+        c.execute(f"""
+            SELECT {group_sql}, 
+                   COALESCE(SUM(amount),0) 
+            FROM invoice_log 
+            WHERE {sql_date} BETWEEN ? AND ? 
+            GROUP BY ym 
+            ORDER BY ym ASC
+        """, (date_from, date_to))
+        
+        rows = c.fetchall()
+        conn.close()
+        
+        month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        labels, revenues = [], []
+        
+        for row in rows:
+            ym = row[0]
+            if days_diff <= 31 and ym and len(ym) == 10:
+                y = ym[0:4]
+                m = int(ym[5:7])
+                d = int(ym[8:10])
+                labels.append(f"{d} {month_names[m-1]}")
+                revenues.append(float(row[1]))
+            elif ym and len(ym) >= 7:
+                y = ym[0:4]
+                m = int(ym[5:7])
+                labels.append(f"{month_names[m-1]} {y}")
+                revenues.append(float(row[1]))
+                
+        return {'months': labels, 'revenues': revenues}
+    except Exception as e:
+        logger.error(f"get_monthly_revenue_filtered error: {e}")
+        return {'months': [], 'revenues': []}
+
+def get_logs_filtered(date_from, date_to):
+    """Get invoice logs filtered by date range."""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        sql_date = _get_date_filter_sql()
+        
+        c.execute(f"SELECT * FROM invoice_log WHERE {sql_date} BETWEEN ? AND ? ORDER BY id DESC", (date_from, date_to))
+        rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        logger.error(f"get_logs_filtered error: {e}")
+        return []
+
+def get_collection_rate_filtered(date_from, date_to):
+    """Get collection rate within the given range."""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        sql_date = _get_date_filter_sql()
+        
+        c.execute(f"SELECT COUNT(*) FROM invoice_log WHERE {sql_date} BETWEEN ? AND ?", (date_from, date_to))
+        total = c.fetchone()[0]
+        if total == 0:
+            conn.close()
+            return 0.0
+            
+        c.execute(f"SELECT COUNT(*) FROM invoice_log WHERE status='Paid' AND {sql_date} BETWEEN ? AND ?", (date_from, date_to))
+        paid = c.fetchone()[0]
+        conn.close()
+        
+        return round((paid / total) * 100, 1)
+    except Exception as e:
+        logger.error(f"get_collection_rate_filtered error: {e}")
+        return 0.0
+
 
 # ================================================================
 # AUTO-BACKUP
@@ -520,13 +702,15 @@ def get_collection_rate():
 def run_auto_backup():
     """Copy billing.db to backups/ once per day; keep last 7 copies."""
     try:
-        os.makedirs('backups', exist_ok=True)
-        today       = datetime.now().strftime('%Y%m%d')
-        backup_file = f'backups/billing_{today}.db'
+        today = datetime.now().strftime('%Y-%m-%d')
+        backup_file = os.path.join(BACKUPS_DIR, f'billing_{today}.db')
+        
         if not os.path.exists(backup_file) and os.path.exists(DB_FILE):
             shutil.copy2(DB_FILE, backup_file)
             logger.info(f"Auto-backup: {backup_file}")
-            for old in sorted(glob.glob('backups/billing_*.db'), reverse=True)[7:]:
+            
+            # Keep only the last 7
+            for old in sorted(glob.glob(os.path.join(BACKUPS_DIR, 'billing_*.db')), reverse=True)[7:]:
                 os.remove(old)
     except Exception as e:
         logger.error(f"Auto-backup failed: {e}")
@@ -596,8 +780,7 @@ def generate_pdf(data):
         gst_rate       = float(cfg.get('gst_rate', 9.0)) / 100.0
         invoice_prefix = cfg.get('invoice_prefix', 'TF/25-26/HR/')
         invoice_number = f"{invoice_prefix}{data['invoice_num']}"
-        filename       = f"output_invoices/{data['pdf_filename']}"
-        os.makedirs('output_invoices', exist_ok=True)
+        filename       = os.path.join(OUTPUT_DIR, data['pdf_filename'])
 
         doc      = SimpleDocTemplate(filename, pagesize=A4,
                                      rightMargin=30, leftMargin=30,

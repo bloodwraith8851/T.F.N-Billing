@@ -26,9 +26,12 @@ import warnings
 import traceback
 import logging
 
-# Set up logging
+# Set up logging in local app data
+_data_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'ThunderstormBilling')
+os.makedirs(_data_dir, exist_ok=True)
+
 logging.basicConfig(
-    filename='tfn_billing_debug.log',
+    filename=os.path.join(_data_dir, 'tfn_billing_debug.log'),
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -136,9 +139,19 @@ def initialize_directories():
         os.chdir(app_dir)
         logging.info(f"Changed working directory to: {os.getcwd()}")
         
-        # Create required directories
-        dirs_to_create = ['output_invoices', 'assets', 'backups', 'exports',
-                          os.path.join('web', 'static', 'assets')]
+        # Initialize data directories and migrate legacy files
+        try:
+            current_dir = os.getcwd()
+            if current_dir not in sys.path:
+                sys.path.insert(0, current_dir)
+            import backend
+            backend.migrate_legacy_data(app_dir)
+            logging.info("Data directory initialized and legacy data migrated.")
+        except Exception as e:
+            logging.error(f"Migration error: {e}")
+        
+        # Create local required directories for static assets
+        dirs_to_create = ['assets', os.path.join('web', 'static', 'assets')]
         for dir_name in dirs_to_create:
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -163,20 +176,6 @@ def initialize_directories():
                             logging.info(f"Copied bundled logo to web/static/assets.")
         except Exception as e:
             logging.error(f"Error copying bundled assets: {str(e)}")
-                
-        # Initialize database files
-        db_files = {
-            'users.json': '[{"username": "admin", "password": "admin", "role": "admin"}]',
-            'customers.json': '[]',
-            'invoice_tracker.json': '{"last_invoice_number": 2058}',
-            'invoice_log.json': '[]'
-        }
-        
-        for filename, content in db_files.items():
-            if not os.path.exists(filename):
-                with open(filename, 'w') as f:
-                    f.write(content)
-                logging.info(f"Created database file: {filename}")
                 
         return True
         

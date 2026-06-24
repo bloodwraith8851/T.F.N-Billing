@@ -57,7 +57,21 @@ def get_plan_breakdown():
 def get_outstanding_dues():
     return backend.get_outstanding_dues()
 
+@eel.expose
+def get_filtered_dashboard(date_from, date_to):
+    """
+    date_from / date_to: "YYYY-MM-DD"
+    Returns all dashboard data filtered to that range in one go.
+    """
+    return {
+        "stats":   backend.get_dashboard_stats_filtered(date_from, date_to),
+        "monthly": backend.get_monthly_revenue_filtered(date_from, date_to),
+        "logs":    backend.get_logs_filtered(date_from, date_to),
+        "collection_rate": backend.get_collection_rate_filtered(date_from, date_to)
+    }
+
 # ── CUSTOMERS ─────────────────────────────────────────────────────────────────
+
 
 @eel.expose
 def get_customers():
@@ -197,14 +211,13 @@ def generate_invoice(data):
 @eel.expose
 def export_customers_csv():
     try:
+        from backend import EXPORTS_DIR
         customers = backend.load_customers()
         if not customers:
-            return {"status": "error", "message": "No customers found."}
-        import pandas as pd
-        df = pd.DataFrame(customers)
-        os.makedirs('exports', exist_ok=True)
-        filename = f"exports/Customers_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        df.to_csv(filename, index=False)
+            return {"status": "error", "message": "No customers to export."}
+            
+        filename = os.path.join(EXPORTS_DIR, f"Customers_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        pd.DataFrame(customers).to_csv(filename, index=False)
         return {"status": "success", "message": f"Exported to {filename}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -212,14 +225,13 @@ def export_customers_csv():
 @eel.expose
 def export_logs_csv():
     try:
+        from backend import EXPORTS_DIR
         logs = backend.load_logs()
         if not logs:
-            return {"status": "error", "message": "No invoice history found."}
-        import pandas as pd
-        df = pd.DataFrame(logs)
-        os.makedirs('exports', exist_ok=True)
-        filename = f"exports/Invoice_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        df.to_csv(filename, index=False)
+            return {"status": "error", "message": "No logs to export."}
+            
+        filename = os.path.join(EXPORTS_DIR, f"Invoice_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        pd.DataFrame(logs).to_csv(filename, index=False)
         return {"status": "success", "message": f"Exported to {filename}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}

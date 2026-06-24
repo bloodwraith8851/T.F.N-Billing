@@ -8,7 +8,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-2.0.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
 [![Python](https://img.shields.io/badge/python-3.10+-4A6CFA?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/license-MIT-9C27B0?style=for-the-badge)](LICENSE)

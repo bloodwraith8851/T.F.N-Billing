@@ -41,8 +41,10 @@ def get_version() -> str:
 
 @eel.expose
 def get_default_path() -> str:
+    local_app_data = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))
     return os.path.join(
-        os.environ.get('ProgramFiles', 'C:\\Program Files'),
+        local_app_data,
+        'Programs',
         'Thunderstorm Billing'
     )
 
@@ -160,17 +162,21 @@ def _run_install(target_dir: str):
 
 def _create_shortcut(target_dir: str):
     try:
-        shell   = Dispatch('WScript.Shell')
-        desktop = shell.SpecialFolders('Desktop')
-        lnk     = os.path.join(desktop, 'Thunderstorm Billing.lnk')
-        target  = os.path.join(target_dir, 'Thunderstorm Billing.exe')
-        icon    = os.path.join(target_dir, 'assets', 'logo.ico')
-        sc = shell.CreateShortCut(lnk)
-        sc.Targetpath       = target
-        sc.WorkingDirectory = target_dir
-        if os.path.exists(icon):
-            sc.IconLocation = icon
-        sc.save()
+        import subprocess
+        target = os.path.join(target_dir, 'Thunderstorm Billing.exe')
+        icon = os.path.join(target_dir, 'assets', 'logo.ico')
+        
+        ps_script = f"""
+        $WshShell = New-Object -comObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\\Thunderstorm Billing.lnk')
+        $Shortcut.TargetPath = '{target}'
+        $Shortcut.WorkingDirectory = '{target_dir}'
+        if (Test-Path '{icon}') {{ $Shortcut.IconLocation = '{icon}' }}
+        $Shortcut.Save()
+        """
+        # Run hidden
+        subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], 
+                       creationflags=subprocess.CREATE_NO_WINDOW)
     except Exception as e:
         print(f'Shortcut error (non-critical): {e}')
 
