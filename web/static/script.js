@@ -8,6 +8,11 @@ let planChart          = null;   // analytics plan
 let dashMonthlyChart   = null;   // dashboard monthly bar
 let dashPlanChart      = null;   // dashboard plan donut
 let _currentCustomerId = null;
+let _currentCustomerData = null;  // full customer object for "New Invoice from Profile"
+let _markPaidInvoiceNum  = null;  // current mark-paid invoice number
+let _confirmCallback     = null;  // current confirm modal callback
+let _allCustomers        = [];    // cached for autocomplete + bulk select
+let _plansData           = [];    // cached plans list
 
 let activeFilter = { from: null, to: null, label: 'month' };
 
@@ -54,22 +59,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inv-months')?.addEventListener('input', calculateTotal);
     document.getElementById('inv-plan')?.addEventListener('change', calculateTotal);
 
-    // Customer select autofill
-    const customerSelectEl = document.getElementById('customerSelect');
-    if (customerSelectEl) {
-        customerSelectEl.addEventListener('change', function () {
-            if (!this.value) { document.getElementById('invoiceForm')?.reset(); return; }
-            try {
-                const data = JSON.parse(this.value);
-                document.getElementById('inv-name').value             = data.name             || '';
-                document.getElementById('inv-customer_id').value      = data.customer_id      || '';
-                document.getElementById('inv-tenant_name').value      = data.tenant_name      || '';
-                document.getElementById('inv-phone').value            = data.phone            || '';
-                document.getElementById('inv-customer_address').value = data.customer_address || '';
-                document.getElementById('inv-customer_gstin').value   = data.customer_gstin   || '';
-            } catch (err) { console.error('Could not parse customer data:', err); }
-        });
-    }
+    // Customer autocomplete (replaces old select autofill)
+    initCustomerAutocomplete();
+
+    // Live GST breakdown preview
+    document.getElementById('inv-total_amount')?.addEventListener('input', calculateGSTBreakdown);
+    document.getElementById('inv-plan')?.addEventListener('change', () => { calculateTotal(); calculateGSTBreakdown(); });
+    document.getElementById('inv-months')?.addEventListener('input', () => { calculateTotal(); calculateGSTBreakdown(); });
+
+    // Star field pause on tab hidden
+    document.addEventListener('visibilitychange', () => {
+        if (window._starAnimId) {
+            if (document.hidden) { cancelAnimationFrame(window._starAnimId); window._starAnimId = null; }
+            else { window._starAnimId = requestAnimationFrame(window._drawStarsFn); }
+        }
+    });
+
 
     // Duplicate check on billing date / customer ID change
     ['inv-customer_id', 'inv-billing_from', 'inv-billing_to'].forEach(id => {
@@ -194,12 +199,13 @@ function initStarField() {
             ctx.fillStyle = `rgba(${s.color},${a.toFixed(2)})`;
             ctx.fill();
         }
-        animId = requestAnimationFrame(drawStars);
+        window._starAnimId = requestAnimationFrame(drawStars);
     }
 
+    window._drawStarsFn = drawStars;  // exposed for visibility-change pause
     window.addEventListener('resize', resize);
     resize();
-    animId = requestAnimationFrame(drawStars);
+    window._starAnimId = requestAnimationFrame(drawStars);
 }
 
 // ============================================================
@@ -628,13 +634,16 @@ async function loadAnalytics() {
 async function loadCustomers() {
     const customers = await eel.get_customers()();
     const tbody  = document.getElementById('customers-tbody');
-    const select = document.getElementById('customerSelect');
 
-    tbody.innerHTML  = '';
-    select.innerHTML = '<option value="">— New Customer —</option>';
+    // Cache for autocomplete and bulk invoice
+    _allCustomers = customers;
+    initCustomerAutocomplete();   // refresh autocomplete with fresh data
+    refreshBulkPlanDropdown();    // populate bulk invoice plan selector
+
+    tbody.innerHTML = '';
 
     if (customers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);font-weight:500;">No customers found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);font-weight:500;">No customers found.</td></tr>`;
     } else {
         customers.forEach(c => {
             const initials   = c.name ? c.name.substring(0, 2).toUpperCase() : 'CU';
@@ -643,6 +652,7 @@ async function loadCustomers() {
                 `<span class="tag-pill">${t.trim()}</span>`).join('');
             tbody.innerHTML += `
                 <tr onclick="viewCustomerProfile('${c.customer_id}')" style="cursor:pointer;">
+                    <td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-chk" data-id="${c.customer_id}" onchange="updateBulkCount()"></td>
                     <td><div class="customer-cell"><div class="customer-avatar">${initials}</div><span style="font-weight:500;">${c.name}</span></div></td>
                     <td><span style="color:var(--text-muted);font-size:0.82em;">${c.customer_id}</span></td>
                     <td><span style="color:var(--text-muted);">${c.phone || '-'}</span></td>
@@ -651,11 +661,11 @@ async function loadCustomers() {
                     <td>${statusHtml}</td>
                     <td>${tagsHtml}</td>
                 </tr>`;
-            select.innerHTML += `<option value='${JSON.stringify(c).replace(/'/g, "&#39;")}'>${c.name} (${c.customer_id})</option>`;
         });
     }
     filterCustomers();
 }
+
 
 function filterCustomers() {
     const query  = (document.getElementById('customer-search')?.value  || '').toLowerCase();
@@ -898,15 +908,7 @@ async function sendWhatsApp(phoneNum, customerName, amount, invoiceNum, filename
 // MARK AS PAID
 // ============================================================
 async function markPaid(invoiceNum) {
-    if (!confirm(`Mark Invoice ${invoiceNum} as Paid?`)) return;
-    const r = await eel.mark_invoice_paid(invoiceNum)();
-    if (r.status === 'success') {
-        showToast('success', 'ri-check-circle-line', r.message);
-        loadHistory();
-        loadDashboard();
-    } else {
-        showToast('error', 'ri-error-warning-line', 'Error: ' + r.message);
-    }
+    showMarkPaidModal(invoiceNum);
 }
 
 // ============================================================
@@ -921,7 +923,8 @@ async function viewCustomerProfile(customerId) {
         }
 
         const { customer, logs, stats } = response;
-        _currentCustomerId = customerId;
+        _currentCustomerId   = customerId;
+        _currentCustomerData = customer;  // cache for "New Invoice from Profile"
 
         document.getElementById('cp-name').textContent    = customer.name;
         document.getElementById('cp-avatar').textContent  = customer.name ? customer.name.substring(0, 2).toUpperCase() : 'CU';
@@ -939,6 +942,8 @@ async function viewCustomerProfile(customerId) {
         document.getElementById('cp-edit-status').value = customer.connection_status || 'Active';
         document.getElementById('cp-edit-tags').value   = customer.tags  || '';
         document.getElementById('cp-edit-notes').value  = customer.notes || '';
+        const emailEl = document.getElementById('cp-edit-email');
+        if (emailEl) emailEl.value = customer.customer_email || '';
 
         document.getElementById('cp-ltv').textContent     = `₹${stats.total_paid.toLocaleString('en-IN')}`;
         document.getElementById('cp-pending').textContent = `₹${stats.pending_dues.toLocaleString('en-IN')}`;
@@ -972,12 +977,18 @@ async function viewCustomerProfile(customerId) {
     }
 }
 
-async function saveCustomerNotes() {
-    if (!_currentCustomerId) return;
+async function saveCustomerFull() {
+    if (!_currentCustomerId || !_currentCustomerData) return;
     const status = document.getElementById('cp-edit-status').value;
     const tags   = document.getElementById('cp-edit-tags').value;
     const notes  = document.getElementById('cp-edit-notes').value;
-    const r = await eel.update_customer_notes(_currentCustomerId, notes, tags, status)();
+    const email  = document.getElementById('cp-edit-email')?.value || '';
+    const r = await eel.save_customer_full({
+        ..._currentCustomerData,
+        connection_status: status,
+        tags, notes,
+        customer_email: email
+    })();
     if (r.status === 'success') {
         showToast('success', 'ri-check-circle-line', 'Customer updated.');
         viewCustomerProfile(_currentCustomerId);
@@ -1043,18 +1054,27 @@ function updateCharts(stats) {
 // ============================================================
 async function loadNotifications() {
     try {
-        const logs  = await eel.get_history()();
+        // Use efficient get_recent_logs_eel instead of loading all history
+        const logs  = await eel.get_recent_logs_eel(5)();
+        const unpaid = await eel.get_unpaid_count_this_month()();
         const list  = document.getElementById('notif-list');
         const badge = document.getElementById('notif-badge');
         if (!list) return;
-        const recent = logs.slice(0, 5);
-        if (recent.length === 0) {
+        if (logs.length === 0) {
             list.innerHTML = '<div class="notif-empty">No recent activity</div>';
             if (badge) badge.style.display = 'none';
             return;
         }
-        if (badge) { badge.textContent = recent.length; badge.style.display = ''; }
-        list.innerHTML = recent.map(l => {
+        // Badge shows UNPAID count, not total recent
+        if (badge) {
+            if (unpaid > 0) {
+                badge.textContent = unpaid;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        list.innerHTML = logs.map(l => {
             const icon  = l.status === 'Paid' ? '✓' : l.status === 'Partial' ? '⋯' : '!';
             const color = l.status === 'Paid' ? '#10b981' : l.status === 'Partial' ? '#f59e0b' : '#ef4444';
             return `<div class="notif-item">
@@ -1115,6 +1135,25 @@ async function loadSettings() {
         document.getElementById('s-invoice_prefix').value  = s.invoice_prefix  || '';
         const vEl = document.getElementById('s-version');
         if (vEl) vEl.textContent = ver;
+
+        // WhatsApp template
+        const waEl = document.getElementById('s-wa-template');
+        if (waEl) {
+            const tmpl = await eel.get_whatsapp_template()();
+            waEl.value = tmpl;
+        }
+
+        // Monthly target
+        const targetEl = document.getElementById('s-monthly-target');
+        if (targetEl) {
+            const target = await eel.get_monthly_target()();
+            targetEl.value = target || 0;
+        }
+
+        // Plans list
+        const plans = await eel.get_plans()();
+        _plansData = [...plans];
+        renderPlansSettings();
     } catch (e) { console.error('Failed to load settings:', e); }
 }
 
@@ -1138,11 +1177,12 @@ async function saveSettings() {
 }
 
 async function doResetCounter() {
-    if (!confirm('Reset invoice counter to #2059?')) return;
-    const res = await eel.reset_invoice_counter()();
-    showToast(res.status,
-        res.status === 'success' ? 'ri-refresh-line' : 'ri-error-warning-line',
-        res.message);
+    showConfirmModal('Reset invoice counter to #2059?', async () => {
+        const res = await eel.reset_invoice_counter()();
+        showToast(res.status,
+            res.status === 'success' ? 'ri-refresh-line' : 'ri-error-warning-line',
+            res.message);
+    });
 }
 
 // ============================================================
@@ -1414,3 +1454,421 @@ spinStyle.textContent = `
     @keyframes spin { to { transform: rotate(360deg); } }
 `;
 document.head.appendChild(spinStyle);
+
+// ============================================================
+// CONFIRM MODAL (replaces window.confirm)
+// ============================================================
+function showConfirmModal(message, callback, title = 'Confirm Action') {
+    _confirmCallback = callback;
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-modal-msg').textContent   = message;
+    document.getElementById('confirm-modal-ok').onclick        = () => {
+        closeConfirmModal();
+        if (_confirmCallback) _confirmCallback();
+    };
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    _confirmCallback = null;
+}
+
+// ============================================================
+// MARK PAID MODAL (replaces native confirm + hardcoded method)
+// ============================================================
+function showMarkPaidModal(invoiceNum) {
+    _markPaidInvoiceNum = invoiceNum;
+    document.getElementById('mark-paid-invoice-label').textContent = `Invoice: ${invoiceNum}`;
+    document.getElementById('mark-paid-modal').classList.remove('hidden');
+}
+
+function closeMarkPaidModal() {
+    document.getElementById('mark-paid-modal').classList.add('hidden');
+    _markPaidInvoiceNum = null;
+}
+
+async function confirmMarkPaid() {
+    if (!_markPaidInvoiceNum) return;
+    const method = document.getElementById('mark-paid-method').value;
+    closeMarkPaidModal();
+    const r = await eel.mark_invoice_paid_with_method(_markPaidInvoiceNum, method)();
+    if (r.status === 'success') {
+        showToast('success', 'ri-check-circle-line', r.message);
+        loadHistory();
+        loadDashboard();
+        loadOverdueDues();
+    } else {
+        showToast('error', 'ri-error-warning-line', 'Error: ' + r.message);
+    }
+}
+
+// ============================================================
+// CUSTOMER AUTOCOMPLETE
+// ============================================================
+function initCustomerAutocomplete() {
+    const input    = document.getElementById('customerSearch');
+    const dropdown = document.getElementById('customerDropdown');
+    if (!input || !dropdown) return;
+
+    // Remove old listener by cloning
+    const newInput = input.cloneNode(true);
+    input.parentNode.replaceChild(newInput, input);
+
+    newInput.addEventListener('input', () => {
+        const q = newInput.value.toLowerCase().trim();
+        if (!q) { dropdown.classList.add('hidden'); return; }
+
+        const matches = _allCustomers.filter(c =>
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.customer_id || '').toLowerCase().includes(q) ||
+            (c.phone || '').toLowerCase().includes(q)
+        ).slice(0, 8);
+
+        if (!matches.length) { dropdown.classList.add('hidden'); return; }
+
+        dropdown.innerHTML = matches.map(c => `
+            <div class="autocomplete-item" data-cid="${c.customer_id}">
+                <strong>${c.name}</strong>
+                <span>${c.customer_id}</span>
+                <small>${c.phone || ''}</small>
+            </div>
+        `).join('');
+        dropdown.classList.remove('hidden');
+
+        dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const cid  = item.dataset.cid;
+                const data = _allCustomers.find(c => c.customer_id === cid);
+                if (data) selectAutocompleteCustomer(data, newInput, dropdown);
+            });
+        });
+    });
+
+    newInput.addEventListener('keydown', e => {
+        if (e.key === 'Escape') dropdown.classList.add('hidden');
+    });
+
+    document.addEventListener('click', e => {
+        if (!e.target.closest('.autocomplete-wrap')) dropdown.classList.add('hidden');
+    }, { passive: true });
+}
+
+function selectAutocompleteCustomer(data, input, dropdown) {
+    input.value = `${data.name} (${data.customer_id})`;
+    dropdown.classList.add('hidden');
+    document.getElementById('inv-name').value             = data.name             || '';
+    document.getElementById('inv-customer_id').value      = data.customer_id      || '';
+    document.getElementById('inv-tenant_name').value      = data.tenant_name      || '';
+    document.getElementById('inv-phone').value            = data.phone            || '';
+    document.getElementById('inv-customer_address').value = data.customer_address || '';
+    document.getElementById('inv-customer_gstin').value   = data.customer_gstin   || '';
+    calculateGSTBreakdown();
+    checkDuplicateInvoice();
+}
+
+// ============================================================
+// LIVE GST BREAKDOWN PREVIEW
+// ============================================================
+async function calculateGSTBreakdown() {
+    const amountEl  = document.getElementById('inv-total_amount');
+    const previewEl = document.getElementById('gst-preview');
+    if (!amountEl || !previewEl) return;
+
+    const total = parseFloat(amountEl.value) || 0;
+    if (total <= 0) { previewEl.style.display = 'none'; return; }
+
+    // Fetch live GST rate from settings
+    let gstRate = 9;
+    try {
+        const s = await eel.get_settings()();
+        gstRate = parseFloat(s.gst_rate) || 9;
+    } catch (e) { /* use default */ }
+
+    const gstTotal  = gstRate * 2;          // CGST + SGST
+    const base      = total / (1 + gstTotal / 100);
+    const cgst      = base * (gstRate / 100);
+    const sgst      = cgst;
+
+    const fmt = v => '\u20b9' + v.toFixed(2);
+    document.getElementById('gst-base').textContent      = fmt(base);
+    document.getElementById('gst-cgst').textContent      = fmt(cgst);
+    document.getElementById('gst-sgst').textContent      = fmt(sgst);
+    document.getElementById('gst-net').textContent       = fmt(total);
+    document.getElementById('gst-cgst-label').textContent = `CGST (${gstRate}%)`;
+    document.getElementById('gst-sgst-label').textContent = `SGST (${gstRate}%)`;
+    previewEl.style.display = 'block';
+}
+
+// ============================================================
+// OVERDUE INVOICES PANEL
+// ============================================================
+async function loadOverdueDues() {
+    try {
+        const items = await eel.get_overdue_invoices()();
+        const list  = document.getElementById('overdue-list');
+        const badge = document.getElementById('overdue-count-badge');
+        if (!list) return;
+
+        if (badge) badge.textContent = items.length;
+
+        if (items.length === 0) {
+            list.innerHTML = `<div class="overdue-empty"><i class="ri-checkbox-circle-line"></i> All invoices are up to date!</div>`;
+            return;
+        }
+
+        list.innerHTML = items.slice(0, 20).map(item => {
+            const sev   = item.severity || 'normal';
+            const days  = item.days_overdue || 0;
+            const label = days === 0 ? 'Today' : `${days}d overdue`;
+            return `
+                <div class="overdue-item">
+                    <div>
+                        <div class="overdue-customer">${item.customer_name}</div>
+                        <div class="overdue-meta">${item.invoice_num} &middot; \u20b9${Number(item.amount).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span class="severity-${sev}">${label}</span>
+                        <span class="status-badge ${item.status === 'Partial' ? 'status-partial' : 'status-unpaid'}">${item.status}</span>
+                        <button class="icon-btn" style="width:26px;height:26px;color:var(--success);" onclick="markPaid('${item.invoice_num}')" title="Mark Paid">
+                            <i class="ri-check-line"></i>
+                        </button>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (e) { console.error('loadOverdueDues:', e); }
+}
+
+// ============================================================
+// MONTHLY TARGET TRACKER
+// ============================================================
+async function loadMonthlyTarget() {
+    try {
+        const target = await eel.get_monthly_target()();
+        const wrap   = document.getElementById('target-progress-wrap');
+        const fill   = document.getElementById('target-bar-fill');
+        const label  = document.getElementById('target-bar-label');
+        if (!wrap || !fill || !label) return;
+
+        if (!target || target <= 0) { wrap.style.display = 'none'; return; }
+
+        // Get current month revenue from active filter stats
+        const stats = await eel.get_filtered_dashboard(
+            new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-01',
+            new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()
+        )();
+        const actual = stats?.stats?.revenue || 0;
+        const pct    = Math.min(Math.round((actual / target) * 100), 100);
+
+        wrap.style.display = 'block';
+        setTimeout(() => { fill.style.width = pct + '%'; }, 100);
+        label.textContent  = `${pct}% of \u20b9${Number(target).toLocaleString('en-IN')} target`;
+    } catch (e) { console.error('loadMonthlyTarget:', e); }
+}
+
+async function saveMonthlyTarget() {
+    const val = parseFloat(document.getElementById('s-monthly-target')?.value) || 0;
+    const r   = await eel.save_monthly_target(val)();
+    showToast(r.status, r.status === 'success' ? 'ri-check-circle-line' : 'ri-error-warning-line',
+        r.status === 'success' ? 'Monthly target saved!' : 'Error: ' + r.message);
+    loadMonthlyTarget();
+}
+
+// ============================================================
+// WHATSAPP TEMPLATE
+// ============================================================
+async function saveWATemplate() {
+    const tmpl = document.getElementById('s-wa-template')?.value || '';
+    const r    = await eel.save_whatsapp_template(tmpl)();
+    showToast(r.status, r.status === 'success' ? 'ri-check-circle-line' : 'ri-error-warning-line',
+        r.status === 'success' ? 'Template saved!' : 'Error: ' + r.message);
+}
+
+// Update sendWhatsApp to use the saved template
+async function sendWhatsApp(phoneNum, customerName, amount, invoiceNum, filename) {
+    if (!phoneNum?.trim()) { showToast('error', 'ri-phone-off-line', 'No phone number found.'); return; }
+    let clean = phoneNum.replace(/[^\d+]/g, '');
+    if (clean.length === 10) clean = '91' + clean;
+
+    let tmpl = 'Hello {name}, your internet bill of \u20b9{amount} is due. Invoice: {invoice_num}.';
+    try { tmpl = await eel.get_whatsapp_template()(); } catch (e) { /* use default */ }
+
+    const msg = tmpl
+        .replace('{name}', customerName)
+        .replace('{amount}', amount)
+        .replace('{invoice_num}', invoiceNum)
+        .replace('{plan}', '');
+
+    if (filename) {
+        eel.automate_whatsapp_attachment(clean, msg, filename)();
+    } else {
+        window.open(`whatsapp://send?phone=${clean}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+}
+
+// ============================================================
+// PLANS MANAGEMENT (Settings)
+// ============================================================
+function renderPlansSettings() {
+    const container = document.getElementById('plans-list');
+    if (!container) return;
+    if (_plansData.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:8px;">No plans configured.</p>';
+        return;
+    }
+    container.innerHTML = _plansData.map((plan, idx) => `
+        <div class="plan-item">
+            <span>${plan}</span>
+            <button onclick="removePlan(${idx})" title="Remove"><i class="ri-delete-bin-line"></i></button>
+        </div>
+    `).join('');
+
+    // Also update invoice form Plan dropdown
+    const invPlan = document.getElementById('inv-plan');
+    if (invPlan) {
+        invPlan.innerHTML = _plansData.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+}
+
+function addPlan() {
+    const input = document.getElementById('new-plan-input');
+    const val   = input?.value?.trim();
+    if (!val) return;
+    if (!_plansData.includes(val)) { _plansData.push(val); renderPlansSettings(); }
+    if (input) input.value = '';
+}
+
+function removePlan(idx) {
+    _plansData.splice(idx, 1);
+    renderPlansSettings();
+}
+
+async function savePlans() {
+    const r = await eel.save_plans(_plansData)();
+    showToast(r.status, r.status === 'success' ? 'ri-check-circle-line' : 'ri-error-warning-line',
+        r.status === 'success' ? 'Plans saved! Invoice form updated.' : 'Error: ' + r.message);
+}
+
+function refreshBulkPlanDropdown() {
+    const sel = document.getElementById('bulk-plan');
+    if (!sel) return;
+    const plans = _plansData.length ? _plansData : ['100 MBPS UNL', '200 MBPS UNL', '300 MBPS UNL'];
+    sel.innerHTML = plans.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+// ============================================================
+// BULK INVOICE GENERATION
+// ============================================================
+function updateBulkCount() {
+    const checked = document.querySelectorAll('.bulk-chk:checked').length;
+    const label   = document.getElementById('bulk-selected-count');
+    if (label) label.textContent = `${checked} customer${checked !== 1 ? 's' : ''} selected`;
+}
+
+function toggleBulkSelectAll(chk) {
+    document.querySelectorAll('.bulk-chk').forEach(c => { c.checked = chk.checked; });
+    updateBulkCount();
+}
+
+async function runBulkInvoice() {
+    const checkedBoxes = document.querySelectorAll('.bulk-chk:checked');
+    if (checkedBoxes.length === 0) {
+        showToast('error', 'ri-error-warning-line', 'Select at least one customer first!');
+        return;
+    }
+
+    const plan    = document.getElementById('bulk-plan')?.value;
+    const from    = document.getElementById('bulk-from')?.value;
+    const to      = document.getElementById('bulk-to')?.value;
+    const amount  = document.getElementById('bulk-amount')?.value;
+    const months  = document.getElementById('bulk-months')?.value || 1;
+    const status  = document.getElementById('bulk-status')?.value || 'Unpaid';
+    const method  = document.getElementById('bulk-method')?.value || 'Cash';
+
+    if (!from || !to || !amount) {
+        showToast('error', 'ri-error-warning-line', 'Please fill in Billing From, To and Amount.');
+        return;
+    }
+
+    const customer_ids = Array.from(checkedBoxes).map(c => c.dataset.id);
+    const fromFmt = from.split('-').reverse().join('-');  // YYYY-MM-DD → DD-MM-YYYY
+    const toFmt   = to.split('-').reverse().join('-');
+
+    showConfirmModal(
+        `Generate invoices for ${customer_ids.length} customer(s) — ${plan} @ \u20b9${amount}?`,
+        async () => {
+            const btn = document.getElementById('bulk-generate-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 0.8s linear infinite;display:inline-block;"></i> Generating...'; }
+            const r = await eel.generate_bulk_invoices(customer_ids, plan, fromFmt, toFmt, months, amount, status, method)();
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-thunder-line"></i> Generate All'; }
+
+            if (r.status === 'success') {
+                showToast('success', 'ri-check-circle-line', `Generated ${r.generated}/${r.total} invoices!`);
+                if (r.errors?.length) showToast('error', 'ri-error-warning-line', `Errors: ${r.errors.join(', ')}`);
+                loadDashboard();
+            } else {
+                showToast('error', 'ri-error-warning-line', r.message);
+            }
+        },
+        'Bulk Invoice Generation'
+    );
+}
+
+// ============================================================
+// CSV TEMPLATE DOWNLOAD
+// ============================================================
+function downloadCSVTemplate() {
+    const headers = ['customer_id', 'name', 'tenant_name', 'phone', 'customer_address', 'customer_gstin', 'customer_email', 'notes', 'tags', 'connection_status'];
+    const sample  = ['CUST-001', 'John Doe', 'Main Tenant', '9876543210', '123 Main St, City - 000000', '', 'john@email.com', '', 'VIP', 'Active'];
+    const csv     = [headers.join(','), sample.join(',')].join('\n');
+    const blob    = new Blob([csv], { type: 'text/csv' });
+    const url     = URL.createObjectURL(blob);
+    const a       = document.createElement('a');
+    a.href     = url;
+    a.download = 'Customer_Import_Template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('success', 'ri-file-download-line', 'Template downloaded!');
+}
+
+// ============================================================
+// SAMPLE PDF PREVIEW (Settings)
+// ============================================================
+async function previewSamplePDF() {
+    showToast('info', 'ri-file-pdf-line', 'Generating sample invoice...');
+    const r = await eel.generate_sample_pdf()();
+    showToast(r.status, r.status === 'success' ? 'ri-check-circle-line' : 'ri-error-warning-line', r.message);
+}
+
+// ============================================================
+// NEW INVOICE FROM CUSTOMER PROFILE
+// ============================================================
+function newInvoiceFromProfile() {
+    if (!_currentCustomerData) { window.switchView('new-invoice'); return; }
+    window.switchView('new-invoice');
+    setTimeout(() => {
+        const d = _currentCustomerData;
+        document.getElementById('inv-name').value             = d.name             || '';
+        document.getElementById('inv-customer_id').value      = d.customer_id      || '';
+        document.getElementById('inv-tenant_name').value      = d.tenant_name      || '';
+        document.getElementById('inv-phone').value            = d.phone            || '';
+        document.getElementById('inv-customer_address').value = d.customer_address || '';
+        document.getElementById('inv-customer_gstin').value   = d.customer_gstin   || '';
+        const searchEl = document.getElementById('customerSearch');
+        if (searchEl) searchEl.value = `${d.name} (${d.customer_id})`;
+        showToast('info', 'ri-user-line', `Customer ${d.name} pre-filled.`);
+    }, 100);
+}
+
+// ============================================================
+// DASHBOARD AUGMENTATION — Load overdue + target on startup
+// ============================================================
+const _origLoadDashboard = window.loadDashboard || loadDashboard;
+window.loadDashboard = async function() {
+    await _origLoadDashboard?.();
+    loadOverdueDues();
+    loadMonthlyTarget();
+};
+

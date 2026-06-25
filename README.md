@@ -2,13 +2,13 @@
 
 <img src="https://ui-avatars.com/api/?name=TF&background=4A6CFA&color=fff&size=128" alt="T.F.N Logo" width="128" style="border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(74, 108, 250, 0.3);">
 
-# ⚡ THUNDERSTORM BILLING v2.1.0
+# ⚡ THUNDERSTORM BILLING v2.2.0
 
 ### _The Ultimate ISP Billing, Analytics, & CRM Platform_
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-2.1.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-6D5BFF?style=for-the-badge&logo=rocket)](https://github.com/bloodwraith8851/T.F.N-Billing/releases)
 [![Python](https://img.shields.io/badge/python-3.10+-4A6CFA?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![UI](https://img.shields.io/badge/UI-Eel_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://github.com/python-eel/Eel)
@@ -56,9 +56,9 @@ Thunderstorm Billing is highly optimized to run on minimal hardware while render
 
 ## ⚡ Performance Benchmarks & Algorithmic Complexity
 
-By migrating from flat JSON files (v1.x) to a highly indexed SQLite architecture (v2.0+), Thunderstorm Billing achieves enterprise-scale performance.
+By migrating from flat JSON files (v1.x) to a highly indexed SQLite architecture (v2.2.0+), Thunderstorm Billing achieves enterprise-scale performance.
 
-| Operation | v1.0 Big O Notation | v2.1.0 Big O Notation | Performance Gain |
+| Operation | v1.0 Big O Notation | v2.2.0 Big O Notation | Performance Gain |
 | :--- | :--- | :--- | :--- |
 | **Search Customer by Phone** | `O(N)` (Linear full-file scan) | `O(log N)` (B-Tree SQLite Index) | ~9,500% Faster |
 | **Generate Macro Revenue Chart** | `O(N)` (Iterating over every invoice) | `O(1)` (Native SQLite Aggregation) | ~14,000% Faster |
@@ -162,7 +162,7 @@ To prevent permission errors, all mutable files are locked inside `C:\Users\[You
 
 ## 🗄️ SQLite Database Schema
 
-Thunderstorm Billing v2.0+ utilizes a highly-indexed `billing.db` SQLite database to guarantee sub-millisecond query performance even with 10,000+ customers.
+Thunderstorm Billing v2.2.0 utilizes a highly-indexed `billing.db` SQLite database to guarantee sub-millisecond query performance even with 10,000+ customers.
 
 ### Table: `customers`
 Stores all CRM data. Unique constraints ensure no duplicate phone numbers exist.
@@ -291,7 +291,7 @@ To build this application, we rely on a carefully curated list of open-source py
 ## 🚀 Installation & Setup Guide
 
 ### Option A — The Seamless Installer (Recommended)
-1. Download the latest **`Thunderstorm_Billing_v2.1.0_Setup.exe`** from the [Releases](https://github.com/bloodwraith8851/T.F.N-Billing/releases) page.
+1. Download the latest **`Thunderstorm_Billing_v2.2.0_Setup.exe`** from the [Releases](https://github.com/bloodwraith8851/T.F.N-Billing/releases) page.
 2. Run the installer. It will install instantly without requesting Admin privileges!
 
 ### Option B — Run from Source (For Developers)

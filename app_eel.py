@@ -3,12 +3,13 @@ import os
 import sys
 import json
 import webbrowser
-import requests
 import backend
 import threading
 import subprocess
 import time
+import pandas as pd
 from datetime import datetime
+from backend import OUTPUT_DIR, EXPORTS_DIR
 
 # Helper for PyInstaller resource paths
 def resource_path(relative_path):
@@ -130,15 +131,16 @@ def get_history():
 @eel.expose
 def mark_invoice_paid(invoice_num):
     try:
-        logs = backend.load_logs()
-        for log in logs:
-            if log['invoice_num'] == invoice_num:
-                log['status']         = 'Paid'
-                log['payment_method'] = 'Manual Entry'
-                log['payment_date']   = datetime.now().strftime("%d-%m-%Y")
-                break
-        backend.save_logs(logs)
+        backend.mark_invoice_paid_db(invoice_num, method='Manual Entry')
         return {"status": "success", "message": f"Invoice {invoice_num} marked as paid."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def mark_invoice_paid_with_method(invoice_num, method):
+    try:
+        backend.mark_invoice_paid_db(invoice_num, method=method)
+        return {"status": "success", "message": f"Invoice {invoice_num} marked as paid via {method}."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -199,7 +201,7 @@ def generate_invoice(data):
                 "customer_gstin":   data.get('customer_gstin', ''),
             })
 
-        webbrowser.open(os.path.abspath(os.path.join('output_invoices', pdf_filename)))
+        webbrowser.open(os.path.join(OUTPUT_DIR, pdf_filename))
 
         return {"status": "success",
                 "message": f"Invoice {invoice_num} generated! Saved as {pdf_filename}"}
@@ -211,28 +213,26 @@ def generate_invoice(data):
 @eel.expose
 def export_customers_csv():
     try:
-        from backend import EXPORTS_DIR
         customers = backend.load_customers()
         if not customers:
             return {"status": "error", "message": "No customers to export."}
-            
         filename = os.path.join(EXPORTS_DIR, f"Customers_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
         pd.DataFrame(customers).to_csv(filename, index=False)
-        return {"status": "success", "message": f"Exported to {filename}"}
+        backend.open_folder(EXPORTS_DIR)
+        return {"status": "success", "message": f"Exported {len(customers)} customers. Folder opened."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @eel.expose
 def export_logs_csv():
     try:
-        from backend import EXPORTS_DIR
         logs = backend.load_logs()
         if not logs:
             return {"status": "error", "message": "No logs to export."}
-            
         filename = os.path.join(EXPORTS_DIR, f"Invoice_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
         pd.DataFrame(logs).to_csv(filename, index=False)
-        return {"status": "success", "message": f"Exported to {filename}"}
+        backend.open_folder(EXPORTS_DIR)
+        return {"status": "success", "message": f"Exported {len(logs)} invoices. Folder opened."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -241,11 +241,13 @@ def export_logs_csv():
 @eel.expose
 def open_pdf(filename):
     try:
-        path = os.path.abspath(os.path.join('output_invoices', filename))
+        # Sanitize: prevent directory traversal
+        safe_name = os.path.basename(filename)
+        path = os.path.join(OUTPUT_DIR, safe_name)
         if os.path.exists(path):
             webbrowser.open(path)
             return {"status": "success"}
-        return {"status": "error", "message": f"File not found: {filename}"}
+        return {"status": "error", "message": f"File not found: {safe_name}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -255,7 +257,9 @@ def automate_whatsapp_attachment(phone, message, filename):
 
     def _auto_wa():
         wa_link  = f"whatsapp://send?phone={phone}&text={urllib.parse.quote(message)}"
-        filepath = os.path.abspath(os.path.join('output_invoices', filename))
+        # Sanitize filename to prevent path traversal
+        safe_name = os.path.basename(filename)
+        filepath  = os.path.join(OUTPUT_DIR, safe_name)
         if os.path.exists(filepath):
             try:
                 ps_cmd = f"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::SetFileDropList([System.Collections.Specialized.StringCollection]@('{filepath}'))"
@@ -279,7 +283,15 @@ def automate_whatsapp_attachment(phone, message, filename):
 
 @eel.expose
 def get_plans():
-    return backend.PLANS
+    return backend.get_plans_list()
+
+@eel.expose
+def save_plans(plans):
+    try:
+        backend.save_plans_list(plans)
+        return {"status": "success", "message": "Plans saved."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @eel.expose
 def get_settings():
@@ -320,16 +332,17 @@ def get_app_logs():
 
 @eel.expose
 def check_for_updates():
-    repo = "bloodwraith8851/T.F.N-Billing"
-    url  = f"https://api.github.com/repos/{repo}/releases/latest"
     try:
+        import requests as _req
+        repo = "bloodwraith8851/T.F.N-Billing"
+        url  = f"https://api.github.com/repos/{repo}/releases/latest"
         version_file = resource_path("version.json")
         if not os.path.exists(version_file):
             return {"status": "error", "message": "version.json not found"}
         with open(version_file, 'r') as f:
             local_version = json.load(f).get("version", "0.0.0")
 
-        response = requests.get(url, timeout=10)
+        response = _req.get(url, timeout=10)
         if response.status_code == 404:
             return {"status": "no_update", "local": local_version,
                     "message": "No releases found on GitHub yet."}
@@ -403,6 +416,73 @@ def download_and_install_update(url):
 
     threading.Thread(target=_do_update, daemon=True).start()
     return {"status": "success"}
+
+# ── NEW EXPOSED FUNCTIONS ─────────────────────────────────────────────────────
+
+@eel.expose
+def get_recent_logs_eel(n=5):
+    return backend.get_recent_logs(n)
+
+@eel.expose
+def get_unpaid_count_this_month():
+    return backend.get_unpaid_count_this_month()
+
+@eel.expose
+def get_overdue_invoices():
+    return backend.get_overdue_invoices()
+
+@eel.expose
+def get_whatsapp_template():
+    return backend.get_whatsapp_template()
+
+@eel.expose
+def save_whatsapp_template(template):
+    try:
+        backend.save_whatsapp_template(template)
+        return {"status": "success", "message": "WhatsApp template saved."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def get_monthly_target():
+    return backend.get_monthly_target()
+
+@eel.expose
+def save_monthly_target(target):
+    try:
+        backend.save_monthly_target(target)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def generate_sample_pdf():
+    return backend.generate_sample_pdf()
+
+@eel.expose
+def open_exports_folder():
+    backend.open_folder(EXPORTS_DIR)
+    return {"status": "success"}
+
+@eel.expose
+def save_customer_full(data):
+    try:
+        backend.save_customer_full(data)
+        return {"status": "success", "message": "Customer saved."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def generate_bulk_invoices(customer_ids, plan, billing_from, billing_to, months,
+                           total_amount, payment_status, payment_method):
+    try:
+        result = backend.generate_bulk_invoices(
+            customer_ids, plan, billing_from, billing_to, int(months),
+            float(total_amount), payment_status, payment_method
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # ── APP START ─────────────────────────────────────────────────────────────────
 

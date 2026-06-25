@@ -1,5 +1,5 @@
 """
-build_installer.py  —  T.F.N Billing v2.0 Build Script
+build_installer.py  —  T.F.N Billing v2.2.0 Build Script
 ========================================================
 Builds the main application bundle (launcher.spec) then
 packages it into a single-file installer EXE.

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thunderstorm Billing v2.0</title>
+    <title>Thunderstorm Billing v2.2.0</title>
     <meta name="description" content="Premium ISP Billing Management Suite — Thunderstorm Fibernet">
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,8 +14,42 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <!-- App Styles -->
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Eel Bridge -->
+    <!-- MODALS -->
+    <!-- Global Confirm Modal -->
+    <div class="modal-overlay hidden" id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-icon-wrap" style="color:var(--warning);background:rgba(245,158,11,0.1);"><i class="ri-error-warning-line"></i></div>
+            <h3 id="confirm-modal-title">Confirm</h3>
+            <p id="confirm-modal-msg">Are you sure you want to perform this action?</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-primary" id="confirm-modal-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mark Paid Modal -->
+    <div class="modal-overlay hidden" id="mark-paid-modal">
+        <div class="modal-box">
+            <div class="modal-icon-wrap" style="color:var(--success);background:rgba(16,185,129,0.1);"><i class="ri-checkbox-circle-line"></i></div>
+            <h3>Mark Invoice Paid</h3>
+            <p id="mark-paid-invoice-label">Invoice: #</p>
+            <div class="form-field" style="margin: 15px 0; text-align: left;">
+                <label>Payment Method</label>
+                <select id="mark-paid-method" class="glass-select">
+                    <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeMarkPaidModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmMarkPaid()" style="background:var(--success);">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EEL -->
     <script type="text/javascript" src="/eel.js"></script>
+    <script src="static/script.js"></script>
 </head>
 
 <body>
@@ -134,7 +168,7 @@
         <div class="sidebar-promo">
             <div class="promo-glow"></div>
             <div class="promo-top">
-                <span class="promo-badge">⚡ v2.0</span>
+                <span class="promo-badge">⚡ v2.2.0</span>
             </div>
             <h4 class="promo-title">Thunderstorm Pro</h4>
             <p class="promo-desc">SQLite Analytics · PDF Invoicing · Auto-backup</p>
@@ -252,6 +286,10 @@
                         <span class="stat-trend positive">
                             <i class="ri-arrow-up-line"></i> All time
                         </span>
+                        <div class="target-progress-wrap" id="target-progress-wrap" style="display:none;">
+                            <div class="target-bar-bg"><div class="target-bar-fill" id="target-bar-fill"></div></div>
+                            <div class="target-bar-label" id="target-bar-label">0% of target</div>
+                        </div>
                     </div>
 
                     <!-- Pending -->
@@ -419,9 +457,13 @@
                         <div class="form-row">
                             <div class="form-field">
                                 <label>Search Existing Customer</label>
-                                <select id="customerSelect" class="glass-select">
-                                    <option value="">— New Customer —</option>
-                                </select>
+                                <div class="autocomplete-wrap">
+                                    <i class="ri-search-line autocomplete-icon"></i>
+                                    <input type="text" id="customerSearch" class="glass-input" placeholder="Type name, ID or phone..." autocomplete="off">
+                                    <div id="customerDropdown" class="autocomplete-dropdown hidden"></div>
+                                </div>
+                                <!-- Hidden fallback for JS compat -->
+                                <select id="customerSelect" style="display:none;"></select>
                             </div>
                         </div>
                         <div class="form-grid fg-2">
@@ -489,6 +531,17 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Live GST Breakdown Preview -->
+                        <div class="gst-preview-card" id="gst-preview" style="display:none;">
+                            <div class="gst-preview-title"><i class="ri-calculator-line"></i> GST Breakdown Preview</div>
+                            <div class="gst-rows">
+                                <div class="gst-row"><span>Base Amount (excl. GST)</span><span id="gst-base">₹0.00</span></div>
+                                <div class="gst-row"><span id="gst-cgst-label">CGST (9%)</span><span id="gst-cgst">₹0.00</span></div>
+                                <div class="gst-row"><span id="gst-sgst-label">SGST (9%)</span><span id="gst-sgst">₹0.00</span></div>
+                                <div class="gst-row gst-total-row"><span>Total (Inc. GST)</span><span id="gst-net">₹0.00</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Section 3: Additional -->
@@ -550,6 +603,9 @@
                     <h1 class="page-title">Customer Directory</h1>
                     <div class="header-actions">
                         <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleCSVImport(this)">
+                        <button class="btn btn-secondary" onclick="downloadCSVTemplate()" title="Download import template">
+                            <i class="ri-file-download-line"></i> Template
+                        </button>
                         <button class="btn btn-secondary" onclick="document.getElementById('csv-file-input').click()">
                             <i class="ri-upload-2-line"></i> Import CSV
                         </button>
@@ -562,36 +618,70 @@
                     </div>
                 </div>
 
-                <div class="glass-card filter-card">
-                    <div class="filter-row">
-                        <div class="filter-search-group">
-                            <i class="ri-search-line"></i>
-                            <input type="text" id="customer-search" placeholder="Search by name, ID, phone...">
-                        </div>
-                        <select id="customer-status-filter" class="glass-select-sm">
-                            <option value="All">All Statuses</option>
-                            <option value="Active">Active</option>
-                            <option value="Suspended">Suspended</option>
-                            <option value="Terminated">Terminated</option>
-                        </select>
-                    </div>
-                </div>
-
                 <div class="glass-card">
                     <div class="table-responsive">
                         <table id="customers-table" class="minimal-table">
-                            <thead><tr>
-                                <th>Customer</th>
-                                <th>Customer ID</th>
-                                <th>Phone</th>
-                                <th>Tenant</th>
-                                <th>Address</th>
-                                <th>Status</th>
-                                <th>Tags</th>
-                            </tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"><input type="checkbox" id="bulk-select-all" onchange="toggleBulkSelectAll(this)" style="accent-color:#6366f1;"></th>
+                                    <th>Customer</th>
+                                    <th>ID</th>
+                                    <th>Phone</th>
+                                    <th>Tenant</th>
+                                    <th>Address</th>
+                                    <th>Status</th>
+                                    <th>Tags</th>
+                                </tr>
+                            </thead>
                             <tbody id="customers-tbody"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Bulk Invoice Generation Panel -->
+                <div class="glass-card bulk-invoice-card" id="bulk-panel" style="margin-top:var(--gap);">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="ri-file-list-3-line" style="color:#6366f1;margin-right:8px;"></i>Bulk Invoice Generation</h3>
+                        <span class="hint-text" id="bulk-selected-count">0 customers selected</span>
+                    </div>
+                    <div class="bulk-controls">
+                        <div class="form-field" style="min-width:160px;">
+                            <label>Plan</label>
+                            <select id="bulk-plan" class="glass-select-sm"></select>
+                        </div>
+                        <div class="form-field" style="min-width:110px;">
+                            <label>Billing From</label>
+                            <input type="date" id="bulk-from" class="glass-input" style="padding:8px;font-size:0.85rem;">
+                        </div>
+                        <div class="form-field" style="min-width:110px;">
+                            <label>Billing To</label>
+                            <input type="date" id="bulk-to" class="glass-input" style="padding:8px;font-size:0.85rem;">
+                        </div>
+                        <div class="form-field" style="min-width:100px;">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="bulk-amount" class="glass-input" placeholder="0.00" style="padding:8px;font-size:0.85rem;">
+                        </div>
+                        <div class="form-field" style="min-width:100px;">
+                            <label>Months</label>
+                            <input type="number" id="bulk-months" class="glass-input" value="1" min="1" style="padding:8px;font-size:0.85rem;">
+                        </div>
+                        <div class="form-field" style="min-width:120px;">
+                            <label>Status</label>
+                            <select id="bulk-status" class="glass-select-sm">
+                                <option>Unpaid</option><option>Paid</option><option>Partial</option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="min-width:130px;">
+                            <label>Method</label>
+                            <select id="bulk-method" class="glass-select-sm">
+                                <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="runBulkInvoice()" id="bulk-generate-btn">
+                            <i class="ri-thunder-line"></i> Generate All
+                        </button>
+                    </div>
+                    <p class="hint-text" style="margin-top:8px;">Check the checkboxes in the table above to select customers for bulk generation.</p>
                 </div>
             </section>
 
@@ -612,15 +702,28 @@
                             <canvas id="monthlyRevenueChart"></canvas>
                         </div>
                     </div>
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="ri-donut-chart-line" style="color:#34d399;margin-right:8px;"></i>
-                                Plan Breakdown
-                            </h3>
+                    <div class="col" style="flex: 1 1 300px; display:flex; flex-direction:column; gap:var(--gap);"> <!-- Analytics Col -->
+                        
+                        <!-- High Priority Overdue Panel -->
+                        <div class="glass-card overdue-panel" id="overdue-panel">
+                            <div class="card-header" style="padding-bottom:10px;">
+                                <h3 class="card-title"><i class="ri-alarm-warning-line" style="color:var(--danger);margin-right:8px;"></i>Overdue Invoices</h3>
+                                <span class="overdue-badge" id="overdue-count-badge">0</span>
+                            </div>
+                            <div class="overdue-list" id="overdue-list">
+                                <div class="overdue-empty"><i class="ri-checkbox-circle-line"></i> All invoices are up to date!</div>
+                            </div>
                         </div>
-                        <div class="chart-area" style="height:280px;">
-                            <canvas id="planBreakdownChart"></canvas>
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="ri-donut-chart-line" style="color:#34d399;margin-right:8px;"></i>
+                                    Plan Breakdown
+                                </h3>
+                            </div>
+                            <div class="chart-area" style="height:280px;">
+                                <canvas id="planBreakdownChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -742,11 +845,52 @@
                         <div id="log-viewer" class="log-viewer">
                             <span style="color:var(--text-muted);">Click Refresh Logs to load.</span>
                         </div>
-                    </div>
 
-                    <div class="form-actions">
-                        <button class="btn btn-primary" onclick="saveSettings()" style="padding:12px 40px;">
-                            <i class="ri-save-line"></i> Save Settings
+                        <!-- 1. WhatsApp Template -->
+                        <div class="form-grid fg-1" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;">
+                            <div class="form-field">
+                                <label><i class="ri-whatsapp-line"></i> WhatsApp Message Template</label>
+                                <textarea id="s-wa-template" class="glass-input" rows="3">Hello {name}, your internet bill of ₹{amount} is due. Invoice: {invoice_num}.</textarea>
+                                <p class="hint-text">Variables: {name}, {amount}, {invoice_num}, {plan}</p>
+                                <button class="btn btn-secondary" onclick="saveWATemplate()" style="margin-top:8px;width:120px;"><i class="ri-save-line"></i> Save Template</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Monthly Revenue Target -->
+                        <div class="form-grid fg-2" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;">
+                            <div class="form-field">
+                                <label><i class="ri-target-line"></i> Monthly Revenue Target (₹)</label>
+                                <input type="number" id="s-monthly-target" class="glass-input" placeholder="e.g. 100000">
+                                <button class="btn btn-secondary" onclick="saveMonthlyTarget()" style="margin-top:8px;width:120px;"><i class="ri-save-line"></i> Set Target</button>
+                            </div>
+                        </div>
+
+                        <!-- 3. Plans Management -->
+                        <div class="form-grid fg-1" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;">
+                            <div class="form-field">
+                                <label><i class="ri-wifi-line"></i> Broadband Plans Management</label>
+                                <div style="display:flex;gap:10px;margin-bottom:10px;">
+                                    <input type="text" id="new-plan-input" class="glass-input" placeholder="e.g. 500 MBPS UNL">
+                                    <button class="btn btn-secondary" onclick="addPlan()"><i class="ri-add-line"></i> Add</button>
+                                </div>
+                                <div id="plans-list" class="plans-list"></div>
+                                <button class="btn btn-secondary" onclick="savePlans()" style="margin-top:10px;width:120px;"><i class="ri-save-line"></i> Save Plans</button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Preview Sample Invoice -->
+                        <div class="form-grid fg-1" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:20px;">
+                            <div class="form-field">
+                                <label><i class="ri-file-pdf-line"></i> Test PDF Generation</label>
+                                <p class="hint-text" style="margin-bottom:10px;">Generate a dummy invoice to verify your logo and company details.</p>
+                                <button class="btn btn-secondary" onclick="previewSamplePDF()" style="width:160px;">
+                                    <i class="ri-eye-line"></i> Preview Sample
+                                </button>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="saveSettings()" style="width:100%;margin-top:20px;">
+                            <i class="ri-save-3-line"></i> Save Main Settings
                         </button>
                     </div>
 
@@ -801,9 +945,14 @@
             <section id="customer-profile" class="view hidden-view">
                 <div class="view-header">
                     <h1 class="page-title">Customer Profile</h1>
-                    <button class="btn btn-secondary" onclick="window.switchView('customers')">
-                        <i class="ri-arrow-left-line"></i> Back
-                    </button>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn btn-primary" id="cp-new-invoice-btn" onclick="newInvoiceFromProfile()">
+                            <i class="ri-file-add-line"></i> New Invoice
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.switchView('customers')">
+                            <i class="ri-arrow-left-line"></i> Back
+                        </button>
+                    </div>
                 </div>
 
                 <div class="profile-grid">
@@ -847,8 +996,9 @@
                                     <option value="Terminated">Terminated</option>
                                 </select>
                                 <input type="text" id="cp-edit-tags" class="glass-input" placeholder="Tags (comma separated)" style="margin-bottom:8px;">
+                                <input type="email" id="cp-edit-email" class="glass-input" placeholder="Email address" style="margin-bottom:8px;">
                                 <textarea id="cp-edit-notes" class="glass-input" placeholder="Notes..." rows="3" style="resize:vertical;"></textarea>
-                                <button class="btn btn-primary" onclick="saveCustomerNotes()" style="width:100%;margin-top:10px;">
+                                <button class="btn btn-primary" onclick="saveCustomerFull()" style="width:100%;margin-top:10px;">
                                     <i class="ri-save-line"></i> Save Changes
                                 </button>
                             </div>

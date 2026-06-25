@@ -44,6 +44,7 @@ def _logo_path():
 
 GST_RATE = 0.09
 
+# Legacy constant kept for backward-compat; use get_plans_list() for dynamic plans
 PLANS = [
     "100 MBPS UNL",
     "200 MBPS UNL",
@@ -122,14 +123,17 @@ def migrate_legacy_data(legacy_dir):
     initialize_default_files()
 
 DEFAULT_SETTINGS = {
-    "company_name":    "THUNDERSTORM FIBERNET",
-    "company_address": "D-2/539, Shiv Durga Vihar, Lakkarpur, Faridabad, HR - 121009",
-    "company_gstin":   "06DJVPP9834G1ZD",
-    "company_phone":   "8585986890",
-    "company_email":   "thunderstromfibernet@gmail.com",
-    "gst_rate":        9.0,
-    "invoice_prefix":  "TF/25-26/HR/",
-    "place_of_supply": "Haryana",
+    "company_name":       "THUNDERSTORM FIBERNET",
+    "company_address":    "D-2/539, Shiv Durga Vihar, Lakkarpur, Faridabad, HR - 121009",
+    "company_gstin":      "06DJVPP9834G1ZD",
+    "company_phone":      "8585986890",
+    "company_email":      "thunderstromfibernet@gmail.com",
+    "gst_rate":           9.0,
+    "invoice_prefix":     "TF/25-26/HR/",
+    "place_of_supply":    "Haryana",
+    "whatsapp_template":  "Hello {name}, your internet bill of \u20b9{amount} is due. Invoice: {invoice_num}. Please pay on time. Thank you!",
+    "monthly_target":     0,
+    "plans":              ["100 MBPS UNL", "200 MBPS UNL", "300 MBPS UNL", "400 MBPS UNL", "500 MBPS UNL"],
 }
 
 # ================================================================
@@ -209,11 +213,19 @@ def init_db():
             phone             TEXT DEFAULT '',
             customer_address  TEXT DEFAULT '',
             customer_gstin    TEXT DEFAULT '',
+            customer_email    TEXT DEFAULT '',
             notes             TEXT DEFAULT '',
             tags              TEXT DEFAULT '',
             connection_status TEXT DEFAULT 'Active',
             created_at        TEXT DEFAULT ''
         )''')
+
+        # Upgrade: add email column if missing (existing installs)
+        try:
+            c.execute("ALTER TABLE customers ADD COLUMN customer_email TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
         c.execute('''CREATE TABLE IF NOT EXISTS invoice_log (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,6 +242,13 @@ def init_db():
             payment_date   TEXT    DEFAULT '',
             plan           TEXT    DEFAULT ''
         )''')
+
+        # Performance indexes
+        c.execute('CREATE INDEX IF NOT EXISTS idx_log_status   ON invoice_log(status)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_log_customer ON invoice_log(customer_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_log_datetime ON invoice_log(datetime)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_log_filename ON invoice_log(filename)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_cust_name    ON customers(name)')
 
         conn.commit()
         _migrate_json_to_db(conn)
@@ -319,12 +338,12 @@ def save_customer(data):
         c.execute(
             '''INSERT OR REPLACE INTO customers
                (customer_id, name, tenant_name, phone, customer_address,
-                customer_gstin, notes, tags, connection_status, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?)''',
+                customer_gstin, customer_email, notes, tags, connection_status, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
             (data.get('customer_id',''), data.get('name',''),
              data.get('tenant_name',''), data.get('phone',''),
              data.get('customer_address',''), data.get('customer_gstin',''),
-             data.get('notes',''), data.get('tags',''),
+             data.get('customer_email',''), data.get('notes',''), data.get('tags',''),
              data.get('connection_status','Active'),
              data.get('created_at', datetime.now().isoformat()))
         )
@@ -334,6 +353,11 @@ def save_customer(data):
     except Exception as e:
         logger.error(f"Error saving customer: {e}")
         raise
+
+
+def save_customer_full(data):
+    """Upsert a customer with all fields including email."""
+    return save_customer(data)
 
 
 def update_customer_notes(customer_id, notes, tags, connection_status):
@@ -367,6 +391,7 @@ def import_customers_csv_data(csv_text):
                     'phone':             row.get('phone','').strip(),
                     'customer_address':  row.get('customer_address','').strip(),
                     'customer_gstin':    row.get('customer_gstin','').strip(),
+                    'customer_email':    row.get('customer_email','').strip(),
                     'notes':             row.get('notes','').strip(),
                     'tags':              row.get('tags','').strip(),
                     'connection_status': row.get('connection_status','Active').strip(),
@@ -565,6 +590,8 @@ def get_collection_rate():
             "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=? AND status='Paid'",
             (month_str,)
         )
+        paid = c.fetchone()[0]   # ← Bug fix: was missing this line
+        conn.close()
         return round((paid / total) * 100, 1)
     except Exception as e:
         logger.error(f"get_collection_rate error: {e}")
@@ -716,15 +743,253 @@ def run_auto_backup():
         logger.error(f"Auto-backup failed: {e}")
 
 # ================================================================
+# MARK INVOICE PAID — Fast UPDATE path
+# ================================================================
+
+def mark_invoice_paid_db(invoice_num, method='Manual Entry'):
+    """Direct SQL UPDATE — no delete/reinsert of entire table."""
+    try:
+        conn = get_db()
+        c    = conn.cursor()
+        c.execute(
+            "UPDATE invoice_log SET status='Paid', payment_method=?, payment_date=? WHERE invoice_num=?",
+            (method, datetime.now().strftime("%d-%m-%Y"), invoice_num)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"mark_invoice_paid_db error: {e}")
+        raise
+
+# ================================================================
+# QUICK ANALYTICS HELPERS
+# ================================================================
+
+def get_recent_logs(n=5):
+    """Return the N most recent invoice log entries (fast LIMIT query)."""
+    try:
+        conn = get_db()
+        c    = conn.cursor()
+        c.execute("SELECT * FROM invoice_log ORDER BY id DESC LIMIT ?", (n,))
+        rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        logger.error(f"get_recent_logs error: {e}")
+        return []
+
+
+def get_unpaid_count_this_month():
+    """Count of Unpaid invoices created in the current calendar month."""
+    try:
+        conn      = get_db()
+        c         = conn.cursor()
+        now       = datetime.now()
+        month_str = f"{now.month:02d}-{now.year}"
+        c.execute(
+            "SELECT COUNT(*) FROM invoice_log "
+            "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=? AND status='Unpaid'",
+            (month_str,)
+        )
+        count = c.fetchone()[0]
+        conn.close()
+        return count
+    except Exception as e:
+        logger.error(f"get_unpaid_count_this_month error: {e}")
+        return 0
+
+
+def get_overdue_invoices():
+    """Return all non-Paid invoices with severity banding by days_overdue."""
+    try:
+        conn = get_db()
+        c    = conn.cursor()
+        c.execute("SELECT * FROM invoice_log WHERE status != 'Paid' ORDER BY id DESC")
+        rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+        now = datetime.now()
+        for row in rows:
+            try:
+                dt   = datetime.strptime(row['datetime'].split(' ')[0], '%d-%m-%Y')
+                days = (now - dt).days
+            except Exception:
+                days = 0
+            row['days_overdue'] = days
+            row['severity']     = (
+                'critical' if days >= 30 else
+                'warning'  if days >= 15 else
+                'caution'  if days >= 7  else 'normal'
+            )
+        return rows
+    except Exception as e:
+        logger.error(f"get_overdue_invoices error: {e}")
+        return []
+
+# ================================================================
+# WHATSAPP TEMPLATE & MONTHLY TARGET
+# ================================================================
+
+def get_whatsapp_template():
+    return load_settings().get('whatsapp_template',
+        'Hello {name}, your internet bill of \u20b9{amount} is due. Invoice: {invoice_num}. Please pay on time.')
+
+def save_whatsapp_template(template):
+    s = load_settings()
+    s['whatsapp_template'] = template
+    save_settings(s)
+
+def get_monthly_target():
+    return float(load_settings().get('monthly_target', 0))
+
+def save_monthly_target(target):
+    s = load_settings()
+    s['monthly_target'] = float(target)
+    save_settings(s)
+
+# ================================================================
+# PLANS MANAGEMENT
+# ================================================================
+
+def get_plans_list():
+    """Load plans from settings.json (user-configurable)."""
+    return load_settings().get('plans', list(PLANS))
+
+def save_plans_list(plans):
+    s = load_settings()
+    s['plans'] = plans
+    save_settings(s)
+
+# ================================================================
+# OPEN FOLDER IN EXPLORER
+# ================================================================
+
+def open_folder(path):
+    """Open a directory in Windows Explorer."""
+    try:
+        safe = os.path.realpath(path)
+        os.startfile(safe)
+    except Exception as e:
+        logger.error(f"open_folder error: {e}")
+
+# ================================================================
+# BULK INVOICE GENERATION
+# ================================================================
+
+def generate_bulk_invoices(customer_ids, plan, billing_from, billing_to, months,
+                            total_amount, payment_status, payment_method):
+    """Generate invoices for a list of customer IDs in one operation."""
+    settings   = load_settings()
+    inv_prefix = settings.get('invoice_prefix', 'TF/25-26/HR/')
+    try:
+        parts      = billing_from.split('-')
+        month_year = f"{parts[1]}_{parts[2]}" if len(parts) >= 3 else datetime.now().strftime("%b_%Y")
+    except Exception:
+        month_year = datetime.now().strftime("%b_%Y")
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute(
+        "SELECT * FROM customers WHERE customer_id IN (%s)" % ','.join('?' * len(customer_ids)),
+        customer_ids
+    )
+    customers_data = [dict(r) for r in c.fetchall()]
+    conn.close()
+
+    generated, errors = 0, []
+    for customer in customers_data:
+        try:
+            invoice_num  = load_invoice_number()
+            clean_name   = "".join(ch for ch in customer['name'].replace(' ', '_') if ch.isalnum() or ch == '_')
+            pdf_filename = f"{clean_name}_{month_year}.pdf"
+            invoice_data = {
+                'invoice_num':      invoice_num,
+                'pdf_filename':     pdf_filename,
+                'name':             customer['name'],
+                'customer_id':      customer['customer_id'],
+                'tenant_name':      customer.get('tenant_name', ''),
+                'phone':            customer.get('phone', ''),
+                'customer_address': customer.get('customer_address', ''),
+                'customer_gstin':   customer.get('customer_gstin', ''),
+                'plan':             plan,
+                'months':           months,
+                'billing_from':     billing_from,
+                'billing_to':       billing_to,
+                'total_amount':     total_amount,
+                'discount':         0,
+                'late_fee':         0,
+                'payment_status':   payment_status,
+                'payment_method':   payment_method,
+                'custom_notes':     '',
+            }
+            generate_pdf(invoice_data)
+            save_invoice_number(invoice_num)
+            append_log({
+                "datetime":       datetime.now().strftime("%d-%m-%Y %H:%M"),
+                "customer_name":  customer['name'],
+                "customer_id":    customer['customer_id'],
+                "phone":          customer.get('phone', ''),
+                "invoice_num":    f"{inv_prefix}{invoice_num}",
+                "amount":         float(total_amount),
+                "paid_amount":    0,
+                "filename":       pdf_filename,
+                "status":         payment_status,
+                "payment_method": payment_method or 'None',
+                "payment_date":   datetime.now().strftime("%d-%m-%Y") if payment_status in ['Paid', 'Partial'] else '',
+                "plan":           plan,
+            })
+            generated += 1
+        except Exception as e:
+            errors.append(f"{customer.get('name','?')}: {str(e)}")
+    return {"generated": generated, "errors": errors, "total": len(customer_ids)}
+
+# ================================================================
+# SAMPLE PDF PREVIEW
+# ================================================================
+
+def generate_sample_pdf():
+    """Generate a dummy invoice using current company settings."""
+    try:
+        import webbrowser as _wb
+        sample_data = {
+            'invoice_num':      'SAMPLE',
+            'pdf_filename':     'SAMPLE_Preview_Invoice.pdf',
+            'name':             'Sample Customer',
+            'customer_id':      'CUST-PREVIEW',
+            'tenant_name':      'Sample Tenant',
+            'phone':            '9999999999',
+            'customer_address': '123 Sample Street, City, State - 000000',
+            'customer_gstin':   'SAMPLE0GSTIN',
+            'plan':             '200 MBPS UNL',
+            'months':           1,
+            'billing_from':     '01-Jun-2026',
+            'billing_to':       '30-Jun-2026',
+            'total_amount':     590,
+            'discount':         0,
+            'late_fee':         0,
+            'payment_status':   'Unpaid',
+            'payment_method':   'None',
+            'custom_notes':     'This is a SAMPLE invoice for preview. Not a real bill.',
+        }
+        generate_pdf(sample_data)
+        sample_path = os.path.join(OUTPUT_DIR, 'SAMPLE_Preview_Invoice.pdf')
+        if os.path.exists(sample_path):
+            _wb.open(sample_path)
+        return {"status": "success", "message": "Sample invoice opened!"}
+    except Exception as e:
+        logger.error(f"generate_sample_pdf error: {e}")
+        return {"status": "error", "message": str(e)}
+
+# ================================================================
 # APP LOGS
 # ================================================================
 
 def get_app_logs(lines=150):
     """Return the last N lines from the debug log file."""
     try:
-        log_file = 'tfn_billing_debug.log'
+        log_file = os.path.join(DATA_DIR, 'tfn_billing_debug.log')
         if not os.path.exists(log_file):
-            return ['(Log file not found.)']
+            return [f'(Log file not found at: {log_file})']
         with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
             all_lines = f.readlines()
         return [l.rstrip('\n') for l in all_lines[-lines:]]
@@ -889,18 +1154,27 @@ def generate_pdf(data):
         if data.get('custom_notes'):
             elements.append(Paragraph(f"<b>Notes:</b> {data['custom_notes']}", styleN))
 
-        # Payment status line (if this PDF is being re-generated after payment)
-        for entry in load_logs():
-            if entry['filename'] == data['pdf_filename']:
-                if entry.get('status') == 'Paid':
+        # Payment status line — direct SQL lookup (no full table scan)
+        try:
+            _conn = get_db()
+            _c    = _conn.cursor()
+            _c.execute(
+                "SELECT status, payment_date, payment_method FROM invoice_log "
+                "WHERE filename=? ORDER BY id DESC LIMIT 1",
+                (data['pdf_filename'],)
+            )
+            _row = _c.fetchone()
+            _conn.close()
+            if _row:
+                _st, _pd, _pm = _row['status'], _row['payment_date'], _row['payment_method']
+                if _st == 'Paid':
                     elements.append(Paragraph(
-                        f"<b>Payment Status:</b> Paid on {entry.get('payment_date','')} "
-                        f"({entry.get('payment_method','')})", styleN))
-                elif entry.get('status') == 'Partial':
+                        f"<b>Payment Status:</b> Paid on {_pd} ({_pm})", styleN))
+                elif _st == 'Partial':
                     elements.append(Paragraph(
-                        f"<b>Payment Status:</b> Partial payment on {entry.get('payment_date','')} "
-                        f"({entry.get('payment_method','')})", styleN))
-                break
+                        f"<b>Payment Status:</b> Partial payment on {_pd} ({_pm})", styleN))
+        except Exception:
+            pass
 
         elements.append(Paragraph(
             f"This is a computer generated bill and does not require signature.<br/>"

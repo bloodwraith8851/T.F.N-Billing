@@ -1,10 +1,8 @@
-ttkbootstrap>=1.10.1
+eel>=0.16.0
 reportlab>=4.0.4
 Pillow>=10.0.0
-matplotlib>=3.7.1
 pandas>=2.0.3
 pyinstaller>=6.1.0
-customtkinter>=5.2.2
 packaging>=23.0
-
-# For analytics/dashboard features
+requests>=2.31.0
+pyautogui>=0.9.54
