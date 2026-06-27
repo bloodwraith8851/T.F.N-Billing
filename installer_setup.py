@@ -6,6 +6,7 @@ import shutil
 import threading
 import subprocess
 import eel
+import zipfile
 from tkinter import filedialog, Tk
 
 # ─── Module-level state ───────────────────────────────────────────────────────
@@ -116,45 +117,38 @@ def _run_install(target_dir: str):
         target_dir = os.path.normpath(target_dir.strip())
         os.makedirs(target_dir, exist_ok=True)
 
-        # Locate source files
+        # Locate zipped payload
         if getattr(sys, 'frozen', False):
-            source = os.path.join(sys._MEIPASS, 'Thunderstorm Billing')  # type: ignore[attr-defined]
-            if not os.path.exists(source):
-                source = sys._MEIPASS  # type: ignore[attr-defined]
+            source_zip = os.path.join(sys._MEIPASS, 'payload', 'payload.zip')
         else:
-            source = r'd:\T.F.N Billing\dist\Thunderstorm Billing'
+            source_zip = r'd:\T.F.N Billing\dist\payload.zip'
 
-        if not os.path.isdir(source):
-            eel.install_error(f'Source directory not found:\n{source}')()
+        if not os.path.isfile(source_zip):
+            eel.install_error(f'Installation payload not found:\n{source_zip}')()
             return
 
-        # Enumerate all files
-        all_files: list[str] = []
-        for root, _, fnames in os.walk(source):
-            for fn in fnames:
-                all_files.append(os.path.join(root, fn))
+        with zipfile.ZipFile(source_zip, 'r') as zf:
+            all_files = zf.infolist()
+            total = len(all_files)
+            if total == 0:
+                eel.install_error('Installation payload is empty.')()
+                return
 
-        if not all_files:
-            eel.install_error('No application files found to install.')()
-            return
+            last_update = 0.0
+            
+            for i, member in enumerate(all_files):
+                # Extract file natively
+                zf.extract(member, target_dir)
+                
+                pct  = (i + 1) / total
+                now  = time.monotonic()
 
-        total = len(all_files)
-        last_update = 0.0          # throttle: track last JS push time
-
-        for i, src in enumerate(all_files):
-            rel  = os.path.relpath(src, source)
-            dest = os.path.join(target_dir, rel)
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            shutil.copy2(src, dest)
-
-            pct  = (i + 1) / total
-            now  = time.monotonic()
-
-            # Push UI update at most every 50 ms, always push the last file
-            if (now - last_update) >= 0.05 or pct == 1.0:
-                short = rel if len(rel) <= 55 else '…' + rel[-52:]
-                eel.update_progress(pct, short)()
-                last_update = now
+                # Push UI update at most every 50 ms, always push the last file
+                if (now - last_update) >= 0.05 or pct == 1.0:
+                    fn = member.filename
+                    short = fn if len(fn) <= 55 else '…' + fn[-52:]
+                    eel.update_progress(pct, short)()
+                    last_update = now
 
         # Create desktop shortcut (non-critical)
         _create_shortcut(target_dir)

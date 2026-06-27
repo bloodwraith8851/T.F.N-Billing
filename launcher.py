@@ -1,22 +1,7 @@
 import os
 import sys
 
-# ── NumPy __version__ safety shim ─────────────────────────────────────────────
-# PyInstaller + NumPy 2.x: dist-info METADATA is sometimes not findable at
-# runtime, causing "module 'numpy' has no attribute '__version__'".
-# Patch it before any other import touches numpy.
-try:
-    import numpy as _np
-    if not hasattr(_np, '__version__'):
-        try:
-            import importlib.metadata as _meta
-            _np.__version__ = _meta.version('numpy')
-        except Exception:
-            _np.__version__ = '2.0.0'   # safe fallback
-    del _np
-except Exception:
-    pass
-# ──────────────────────────────────────────────────────────────────────────────
+# No longer importing numpy here to prevent bloat.
 
 import subprocess
 import tkinter as tk
@@ -50,76 +35,6 @@ def show_error_dialog(title, message):
         root.destroy()
     except:
         print(f"ERROR - {title}: {message}")
-
-def install_requirements():
-    """Install required packages"""
-    logging.info("Starting requirements installation")
-    try:
-        # Create a simple GUI window to show progress
-        root = tk.Tk()
-        root.withdraw()
-        
-        # Create a custom dialog
-        dialog = tk.Toplevel(root)
-        dialog.title("Installing Requirements")
-        dialog.geometry("300x150")
-        
-        # Center the dialog
-        dialog.update_idletasks()
-        width = dialog.winfo_width()
-        height = dialog.winfo_height()
-        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
-        y = (dialog.winfo_screenheight() // 2) - (height // 2)
-        dialog.geometry(f"{width}x{height}+{x}+{y}")
-        
-        # Add message
-        message = tk.Label(dialog, text="Installing required packages...\nPlease wait...", pady=20)
-        message.pack()
-        
-        # Add progress message
-        progress_msg = tk.Label(dialog, text="")
-        progress_msg.pack()
-        
-        dialog.update()
-        
-        # Check if pip is installed
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "--version"])
-        except subprocess.CalledProcessError:
-            show_error_dialog("Error", "pip is not installed. Please install pip first.")
-            return False
-        
-        # Install requirements
-        progress_msg.config(text="Installing packages...")
-        dialog.update()
-        
-        process = subprocess.Popen(
-            [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-        
-        stdout, stderr = process.communicate()
-        
-        if process.returncode != 0:
-            show_error_dialog("Error", f"Failed to install requirements:\n{stderr}")
-            return False
-        
-        progress_msg.config(text="Installation completed!")
-        dialog.update()
-        time.sleep(1)
-        
-        dialog.destroy()
-        root.destroy()
-        
-        logging.info("Requirements installation completed successfully")
-        return True
-        
-    except Exception as e:
-        error_msg = f"Error installing requirements: {str(e)}\n{traceback.format_exc()}"
-        show_error_dialog("Error", error_msg)
-        return False
 
 def initialize_directories():
     """Initialize required directories"""
@@ -191,19 +106,6 @@ def main():
     # Initialize required directories and files
     if not initialize_directories():
         return
-        
-    # Check if requirements are installed
-    try:
-        import eel
-        import reportlab
-        import pandas
-        import PIL
-        logging.info("All required packages are installed")
-    except ImportError as e:
-        logging.warning(f"Missing package: {str(e)}")
-        if not install_requirements():
-            return
-
     # Import and run the main application
     try:
         # Add the current directory to Python path

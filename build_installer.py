@@ -33,20 +33,44 @@ def _run(cmd: list, label: str):
 
 def build_app():
     """Compile launcher.py + web/ + assets/ into dist/Thunderstorm Billing/"""
-    _run(
-        [sys.executable, "-m", "PyInstaller", "--clean", "--noconfirm", "launcher.spec"],
-        "Building main application..."
-    )
+    cmd = [
+        sys.executable, "-m", "PyInstaller",
+        "--clean",
+        "--noconfirm",
+        "--onedir",
+        "--windowed",
+        "--name=Thunderstorm Billing",
+        "--add-data=web;web",
+        "--add-data=assets;assets",
+        "--add-data=version.json;.",
+        "--hidden-import=eel",
+        "--hidden-import=bottle",
+        "--hidden-import=bottle_websocket",
+        "--hidden-import=geventwebsocket",
+        "--hidden-import=gevent",
+        "--hidden-import=reportlab",
+        "--hidden-import=PIL",
+        "launcher.py"
+    ]
+    if os.path.exists(os.path.join("assets", "logo.ico")):
+        cmd.insert(-1, "--icon=assets/logo.ico")
+        
+    _run(cmd, "Building main application...")
     print("[OK] Application built  -->  dist/Thunderstorm Billing/")
 
 # ── Step 2 — Installer EXE ─────────────────────────────────────────────────
 
 def build_installer():
-    """Package dist/Thunderstorm Billing + installer_web into a single Setup EXE."""
+    """Package dist/payload.zip + installer_web into a single Setup EXE."""
     dist_path = os.path.join("dist", "Thunderstorm Billing")
     if not os.path.isdir(dist_path):
         print(f"ERROR: {dist_path!r} not found — run build_app() first.")
         sys.exit(1)
+        
+    print("Compressing application bundle into payload.zip...")
+    archive_base = os.path.join("dist", "payload")
+    shutil.make_archive(archive_base, 'zip', dist_path)
+    payload_zip = archive_base + ".zip"
 
     ver = _version()
     out_name = f"Thunderstorm_Billing_v{ver}_Setup"
@@ -58,7 +82,7 @@ def build_installer():
         "--onefile",
         "--windowed",
         # ── bundled data ──
-        f"--add-data={dist_path};Thunderstorm Billing",  # full app bundle
+        f"--add-data={payload_zip};payload",              # zipped app bundle
         "--add-data=installer_web;installer_web",         # installer UI (HTML/CSS/JS)
         "--add-data=version.json;.",                      # for version label in installer
         # ── hidden imports (eel + win32com) ──
