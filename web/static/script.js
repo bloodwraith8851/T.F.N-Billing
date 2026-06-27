@@ -1153,53 +1153,34 @@ function loadHighcharts() {
                 'https://code.highcharts.com/modules/accessibility.js'
             ];
             
-            let loadedCount = 0;
-            if (modules.length === 0) {
-                highchartsLoaded = true;
-                highchartsLoading = false;
-                resolve();
-                return;
-            }
-            
-            modules.forEach(src => {
+            function loadNextModule(index) {
+                if (index >= modules.length) {
+                    // Apply Dark Theme by default for Highcharts
+                    if (window.Highcharts) {
+                        Highcharts.setOptions({
+                            chart: { backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+                            title: { style: { color: '#f8fafc' } },
+                            legend: { itemStyle: { color: '#94a3b8' } },
+                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', style: { color: '#f8fafc' }, borderWidth: 0, borderRadius: 8 }
+                        });
+                    }
+                    highchartsLoaded = true;
+                    highchartsLoading = false;
+                    resolve();
+                    return;
+                }
+                
                 const modScript = document.createElement('script');
-                modScript.src = src;
-                modScript.onload = () => {
-                    loadedCount++;
-                    if (loadedCount === modules.length) {
-                        // Apply Dark Theme by default for Highcharts
-                        if (window.Highcharts) {
-                            Highcharts.setOptions({
-                                chart: {
-                                    backgroundColor: 'transparent',
-                                    style: { fontFamily: "'Poppins', sans-serif" }
-                                },
-                                title: { style: { color: '#f8fafc' } },
-                                legend: { itemStyle: { color: '#94a3b8' } },
-                                tooltip: {
-                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                    style: { color: '#f8fafc' },
-                                    borderWidth: 0,
-                                    borderRadius: 8
-                                }
-                            });
-                        }
-                        highchartsLoaded = true;
-                        highchartsLoading = false;
-                        resolve();
-                    }
-                };
+                modScript.src = modules[index];
+                modScript.onload = () => loadNextModule(index + 1);
                 modScript.onerror = () => {
-                    console.warn(`Failed to load Highcharts module: ${src}`);
-                    loadedCount++;
-                    if (loadedCount === modules.length) {
-                        highchartsLoaded = true;
-                        highchartsLoading = false;
-                        resolve(); // Resolve anyway to try rendering with whatever loaded
-                    }
+                    console.warn(`Failed to load Highcharts module: ${modules[index]}`);
+                    loadNextModule(index + 1);
                 };
                 document.head.appendChild(modScript);
-            });
+            }
+            
+            loadNextModule(0);
         };
         
         scriptBase.onerror = (e) => {
@@ -1230,13 +1211,44 @@ function refreshAllCharts() {
 // ============================================================
 // DYNAMIC CHART RENDERING (Highcharts / Chart.js Fallback)
 // ============================================================
+function getChartContainer(ctxId, useHighcharts) {
+    const container = document.getElementById(ctxId);
+    if (!container) return null;
+    const parent = container.parentElement;
+    
+    if (useHighcharts) {
+        if (container.tagName.toLowerCase() === 'canvas') {
+            const div = document.createElement('div');
+            div.id = ctxId;
+            div.className = container.className;
+            div.style.width = '100%';
+            div.style.height = '100%';
+            parent.replaceChild(div, container);
+            return div;
+        }
+        return container;
+    } else {
+        if (container.tagName.toLowerCase() === 'div') {
+            const canvas = document.createElement('canvas');
+            canvas.id = ctxId;
+            canvas.className = container.className;
+            parent.replaceChild(canvas, container);
+            return canvas;
+        }
+        return container;
+    }
+}
+
 function renderBarChart(ctxId, existingChart, labels, data, colors) {
     if (existingChart) existingChart.destroy();
     const l = labels.length ? labels : ['No Data'];
     const d = data.length ? data : [0];
+    const useHighcharts = isOnline && window.Highcharts && highchartsLoaded;
+    const container = getChartContainer(ctxId, useHighcharts);
+    if (!container) return null;
     
-    if (isOnline && window.Highcharts && highchartsLoaded) {
-        return Highcharts.chart(ctxId, {
+    if (useHighcharts) {
+        return Highcharts.chart(container, {
             chart: { type: 'column', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
             title: { text: null },
             xAxis: { categories: l, labels: { style: { color: '#94a3b8' } }, gridLineWidth: 0, lineWidth: 0, tickWidth: 0 },
@@ -1253,9 +1265,7 @@ function renderBarChart(ctxId, existingChart, labels, data, colors) {
             credits: { enabled: false }
         });
     } else {
-        const ctx = document.getElementById(ctxId);
-        if (!ctx) return null;
-        return new Chart(ctx, {
+        return new Chart(container, {
             type: 'bar',
             data: {
                 labels: l,
@@ -1283,9 +1293,13 @@ function renderBarChart(ctxId, existingChart, labels, data, colors) {
 
 function renderDonutChart(ctxId, existingChart, labels, data, colors) {
     if (existingChart) existingChart.destroy();
-    if (isOnline && window.Highcharts && highchartsLoaded) {
+    const useHighcharts = isOnline && window.Highcharts && highchartsLoaded;
+    const container = getChartContainer(ctxId, useHighcharts);
+    if (!container) return null;
+    
+    if (useHighcharts) {
         const seriesData = labels.map((lbl, i) => ({ name: lbl, y: data[i] || 0, color: colors[i % colors.length] }));
-        return Highcharts.chart(ctxId, {
+        return Highcharts.chart(container, {
             chart: { type: 'pie', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
             title: { text: null },
             plotOptions: {
@@ -1297,9 +1311,7 @@ function renderDonutChart(ctxId, existingChart, labels, data, colors) {
             credits: { enabled: false }
         });
     } else {
-        const ctx = document.getElementById(ctxId);
-        if (!ctx) return null;
-        return new Chart(ctx, {
+        return new Chart(container, {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -1315,8 +1327,12 @@ function renderDonutChart(ctxId, existingChart, labels, data, colors) {
 
 function renderLineChart(ctxId, existingChart, labels, data, color) {
     if (existingChart) existingChart.destroy();
-    if (isOnline && window.Highcharts && highchartsLoaded) {
-        return Highcharts.chart(ctxId, {
+    const useHighcharts = isOnline && window.Highcharts && highchartsLoaded;
+    const container = getChartContainer(ctxId, useHighcharts);
+    if (!container) return null;
+    
+    if (useHighcharts) {
+        return Highcharts.chart(container, {
             chart: { type: 'area', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
             title: { text: null },
             xAxis: { categories: labels, visible: false },
@@ -1338,9 +1354,7 @@ function renderLineChart(ctxId, existingChart, labels, data, color) {
             credits: { enabled: false }
         });
     } else {
-        const ctx = document.getElementById(ctxId);
-        if (!ctx) return null;
-        return new Chart(ctx, {
+        return new Chart(container, {
             type: 'line',
             data: {
                 labels: labels,
