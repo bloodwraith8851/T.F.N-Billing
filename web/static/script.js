@@ -435,6 +435,12 @@ async function applyDateFilter(from, to) {
     try {
         const data = await eel.get_filtered_dashboard(from, to)();
         
+        // If we are on Analytics view, update Analytics charts specifically
+        const analyticsSection = document.getElementById('analytics');
+        if (analyticsSection && !analyticsSection.classList.contains('hidden-view')) {
+            loadAnalytics(from, to);
+        }
+        
         // 1. Stats
         const stats = data.stats;
         animateCounter(document.getElementById('stat-paid'),    stats.paid,    '₹', 1000);
@@ -563,12 +569,26 @@ async function loadOutstandingDues() {
 // ============================================================
 // ANALYTICS
 // ============================================================
-async function loadAnalytics() {
+async function loadAnalytics(from = null, to = null) {
     try {
-        const [monthly, plans] = await Promise.all([
-            eel.get_monthly_revenue()(),
-            eel.get_plan_breakdown()()
-        ]);
+        // Use global filter if none provided
+        if (!from || !to) {
+            from = activeFilter.from;
+            to = activeFilter.to;
+        }
+        
+        let monthly, plans;
+        if (from && to) {
+            [monthly, plans] = await Promise.all([
+                eel.get_monthly_revenue_filtered(from, to)(),
+                eel.get_plan_breakdown_filtered(from, to)()
+            ]);
+        } else {
+            [monthly, plans] = await Promise.all([
+                eel.get_monthly_revenue()(),
+                eel.get_plan_breakdown()()
+            ]);
+        }
 
         setChartDefaults();
 
@@ -587,10 +607,12 @@ async function loadAnalytics() {
                             `hsla(${240 + i * 20}, 70%, 65%, 0.75)`),
                         borderRadius: 8,
                         borderSkipped: false,
+                        maxBarThickness: 50,
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
                     plugins: { legend: { display: false } },
                     scales: {
                         y: {

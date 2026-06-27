@@ -55,6 +55,10 @@ def get_plan_breakdown():
     return backend.get_plan_breakdown()
 
 @eel.expose
+def get_plan_breakdown_filtered(date_from, date_to):
+    return backend.get_plan_breakdown_filtered(date_from, date_to)
+
+@eel.expose
 def get_outstanding_dues():
     return backend.get_outstanding_dues()
 

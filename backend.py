@@ -548,6 +548,28 @@ def get_plan_breakdown():
         logger.error(f"get_plan_breakdown error: {e}")
         return {'plans': [], 'counts': []}
 
+def get_plan_breakdown_filtered(date_from, date_to):
+    """Invoice count grouped by plan within the selected date range."""
+    try:
+        conn = get_db()
+        c    = conn.cursor()
+        sql_date = _get_date_filter_sql()
+        c.execute(
+            f"SELECT plan, COUNT(*) AS cnt FROM invoice_log "
+            f"WHERE plan!='' AND {sql_date} BETWEEN ? AND ? "
+            f"GROUP BY plan ORDER BY cnt DESC",
+            (date_from, date_to)
+        )
+        rows = c.fetchall()
+        conn.close()
+        if not rows:
+            return {'plans': [], 'counts': []}
+        return {'plans': [r['plan'] for r in rows], 'counts': [r['cnt'] for r in rows]}
+    except Exception as e:
+        logger.error(f"get_plan_breakdown_filtered error: {e}")
+        return {'plans': [], 'counts': []}
+
+
 
 def get_outstanding_dues():
     """All unpaid/partial invoices with days-overdue calculated. Handles both datetime formats."""
