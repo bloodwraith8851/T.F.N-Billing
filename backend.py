@@ -503,22 +503,23 @@ def _month_ago(n):
 
 
 def get_monthly_revenue():
-    """Revenue totals for each of the last 6 months."""
+    """Revenue totals for each of the last 6 months. Handles both ISO and legacy datetime formats."""
     try:
         conn        = get_db()
         c           = conn.cursor()
         month_names = ['Jan','Feb','Mar','Apr','May','Jun',
                        'Jul','Aug','Sep','Oct','Nov','Dec']
+        # YYYY-MM extracted from either format
+        month_expr = _get_month_group_sql()
         labels, revenues = [], []
         for i in range(5, -1, -1):
             year, month = _month_ago(i)
-            # datetime stored as "DD-MM-YYYY HH:MM"
-            month_str = f"{month:02d}-{year}"
-            label     = f"{month_names[month-1]} {str(year)[2:]}"
+            ym_str = f"{year}-{month:02d}"   # YYYY-MM
+            label  = f"{month_names[month-1]} {str(year)[2:]}"
             c.execute(
-                "SELECT COALESCE(SUM(amount),0) FROM invoice_log "
-                "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=?",
-                (month_str,)
+                f"SELECT COALESCE(SUM(amount),0) FROM invoice_log "
+                f"WHERE ({month_expr})=?",
+                (ym_str,)
             )
             revenues.append(float(c.fetchone()[0]))
             labels.append(label)
@@ -549,7 +550,7 @@ def get_plan_breakdown():
 
 
 def get_outstanding_dues():
-    """All unpaid/partial invoices with days-overdue calculated."""
+    """All unpaid/partial invoices with days-overdue calculated. Handles both datetime formats."""
     try:
         conn = get_db()
         c    = conn.cursor()
@@ -559,7 +560,12 @@ def get_outstanding_dues():
         now  = datetime.now()
         for row in rows:
             try:
-                dt = datetime.strptime(row['datetime'].split(' ')[0], '%d-%m-%Y')
+                raw = row['datetime'].split(' ')[0]  # date part only
+                # Auto-detect format
+                if len(raw) == 10 and raw[4] == '-':
+                    dt = datetime.strptime(raw, '%Y-%m-%d')   # ISO
+                else:
+                    dt = datetime.strptime(raw, '%d-%m-%Y')   # legacy
                 row['days_overdue'] = (now - dt).days
             except Exception:
                 row['days_overdue'] = 0
@@ -570,27 +576,26 @@ def get_outstanding_dues():
 
 
 def get_collection_rate():
-    """Percentage of invoices marked Paid in the current month."""
+    """Percentage of invoices marked Paid in the current month. Handles both datetime formats."""
     try:
         conn      = get_db()
         c         = conn.cursor()
         now       = datetime.now()
-        month_str = f"{now.month:02d}-{now.year}"
+        ym_str    = f"{now.year}-{now.month:02d}"   # YYYY-MM
+        month_expr = _get_month_group_sql()
         c.execute(
-            "SELECT COUNT(*) FROM invoice_log "
-            "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=?",
-            (month_str,)
+            f"SELECT COUNT(*) FROM invoice_log WHERE ({month_expr})=?",
+            (ym_str,)
         )
         total = c.fetchone()[0]
         if total == 0:
             conn.close()
             return 0.0
         c.execute(
-            "SELECT COUNT(*) FROM invoice_log "
-            "WHERE substr(datetime,4,2)||'-'||substr(datetime,7,4)=? AND status='Paid'",
-            (month_str,)
+            f"SELECT COUNT(*) FROM invoice_log WHERE ({month_expr})=? AND status='Paid'",
+            (ym_str,)
         )
-        paid = c.fetchone()[0]   # ← Bug fix: was missing this line
+        paid = c.fetchone()[0]
         conn.close()
         return round((paid / total) * 100, 1)
     except Exception as e:
@@ -602,8 +607,34 @@ def get_collection_rate():
 # ================================================================
 
 def _get_date_filter_sql():
-    # Helper: Converts "DD-MM-YYYY HH:MM" to "YYYY-MM-DD" for comparison
-    return "substr(datetime,7,4)||'-'||substr(datetime,4,2)||'-'||substr(datetime,1,2)"
+    """
+    Returns a SQLite expression that extracts YYYY-MM-DD from the datetime field.
+    Handles both formats stored in the DB:
+      - ISO format:    'YYYY-MM-DD HH:MM'  (new inserts)
+      - Legacy format: 'DD-MM-YYYY HH:MM'  (old JSON-migrated rows)
+    Detection: if char at position 5 (0-indexed, col 5 in 1-indexed) is '-'
+               and char 8 (col 8) is '-', it's ISO. Otherwise treat as legacy.
+    """
+    return (
+        "CASE "
+        "  WHEN substr(datetime,5,1)='-' AND substr(datetime,8,1)='-' "
+        "    THEN substr(datetime,1,10) "
+        "  ELSE substr(datetime,7,4)||'-'||substr(datetime,4,2)||'-'||substr(datetime,1,2) "
+        "END"
+    )
+
+def _get_month_group_sql():
+    """
+    Returns a SQLite expression that extracts YYYY-MM for monthly grouping.
+    Same dual-format logic as _get_date_filter_sql.
+    """
+    return (
+        "CASE "
+        "  WHEN substr(datetime,5,1)='-' AND substr(datetime,8,1)='-' "
+        "    THEN substr(datetime,1,7) "
+        "  ELSE substr(datetime,7,4)||'-'||substr(datetime,4,2) "
+        "END"
+    )
 
 def get_dashboard_stats_filtered(date_from, date_to):
     """Get revenue stats filtered by date range (YYYY-MM-DD)"""
@@ -648,7 +679,7 @@ def get_monthly_revenue_filtered(date_from, date_to):
         if days_diff <= 31:
             group_sql = f"{sql_date} as ym"
         else:
-            group_sql = "substr(datetime,7,4)||'-'||substr(datetime,4,2) as ym"
+            group_sql = f"{_get_month_group_sql()} as ym"
         
         c.execute(f"""
             SELECT {group_sql}, 

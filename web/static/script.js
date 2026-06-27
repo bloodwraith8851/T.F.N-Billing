@@ -1007,7 +1007,7 @@ function renderProfileTimeline(logs, filter) {
         const safeFile   = (log.filename    || '').replace(/'/g, "\\'");
         const safeInv    = (log.invoice_num || '').replace(/'/g, "\\'");
         const safeCid    = (_currentCustomerId || '').replace(/'/g, "\\'");
-        const planLabel  = log.plan_name ? `<div class="tl-card-plan">${log.plan_name}</div>` : '';
+        const planLabel  = (log.plan_name || log.plan) ? `<div class="tl-card-plan">${log.plan_name || log.plan}</div>` : '';
         const payBtn     = log.status !== 'Paid'
             ? `<button class="tl-btn tl-pay-btn" onclick="markPaid('${safeInv}');setTimeout(()=>viewCustomerProfile('${safeCid}'),700)" title="Mark Paid"><i class="ri-check-line"></i></button>`
             : '';
