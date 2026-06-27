@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thunderstorm Billing v2.2.0</title>
+    <title>Thunderstorm Billing</title>
     <meta name="description" content="Premium ISP Billing Management Suite — Thunderstorm Fibernet">
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -102,7 +102,7 @@
 <div id="notification-panel" class="notification-panel hidden">
     <div class="notif-header">
         <span><i class="ri-notification-3-line"></i> Recent Activity</span>
-        <button onclick="closeNotifications()" class="notif-close"><i class="ri-close-line"></i></button>
+        <button onclick="closeNotifications()" class="notif-close" title="Close Notifications"><i class="ri-close-line"></i></button>
     </div>
     <div id="notif-list" class="notif-list">
         <div class="notif-empty">No recent activity</div>
@@ -167,7 +167,7 @@
         <div class="sidebar-promo">
             <div class="promo-glow"></div>
             <div class="promo-top">
-                <span class="promo-badge">⚡ v2.2.0</span>
+                <span class="promo-badge">⚡ <span class="app-version"></span></span>
             </div>
             <h4 class="promo-title">Thunderstorm Pro</h4>
             <p class="promo-desc">SQLite Analytics · PDF Invoicing · Auto-backup</p>
@@ -217,7 +217,7 @@
                         <i class="ri-search-line"></i>
                         <input type="text" id="header-search" placeholder="Search..." oninput="filterTables(this.value)">
                     </div>
-                    <button class="icon-btn notification-btn" id="notif-btn" onclick="toggleNotifications()">
+                    <button class="icon-btn notification-btn" id="notif-btn" onclick="toggleNotifications()" title="View Notifications">
                         <i class="ri-notification-3-line"></i>
                         <span class="notif-badge" id="notif-badge" style="display:none">0</span>
                     </button>
@@ -357,11 +357,11 @@
                         <!-- Mini Calendar -->
                         <div class="glass-card calendar-glass-card">
                             <div class="cal-header">
-                                <button class="cal-nav-btn" id="cal-prev">
+                                <button class="cal-nav-btn" id="cal-prev" title="Previous Month">
                                     <i class="ri-arrow-left-s-line"></i>
                                 </button>
                                 <h3 id="cal-month-title" class="cal-title">Month Year</h3>
-                                <button class="cal-nav-btn" id="cal-next">
+                                <button class="cal-nav-btn" id="cal-next" title="Next Month">
                                     <i class="ri-arrow-right-s-line"></i>
                                 </button>
                             </div>
@@ -894,6 +894,19 @@
                         </button>
                     </div>
 
+                    <hr>
+                    <!-- LIVE LOGS -->
+                    <div style="margin-top:20px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h3>System Logs (Live)</h3>
+                            <button class="btn btn-secondary" onclick="loadAppLogs()" style="font-size:0.85rem;" title="Refresh Logs">
+                                <i class="ri-refresh-line"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="glass-card" style="padding:0; overflow:hidden;">
+                            <textarea id="log-viewer" readonly style="width:100%;height:300px;background:#0f172a;color:#10b981;font-family:monospace;font-size:0.85rem;border:none;padding:15px;resize:none;white-space:pre-wrap;"></textarea>
+                        </div>
+                    </div>
                 </div>
             </section>
 

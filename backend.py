@@ -10,6 +10,7 @@ import webbrowser
 from datetime import datetime
 import traceback
 import logging
+from logging.handlers import RotatingFileHandler
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -19,8 +20,27 @@ from reportlab.lib.units import mm
 from reportlab.lib.enums import TA_CENTER
 import PIL.Image
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+# ================================================================
+# SETUP ADVANCED LOGGING (Rotating File)
+# ================================================================
+DATA_DIR = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'ThunderstormBilling')
+os.makedirs(DATA_DIR, exist_ok=True)
+LOG_FILE = os.path.join(DATA_DIR, 'tfn_billing_debug.log')
+
+logger = logging.getLogger('ThunderstormBilling')
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    rfh = RotatingFileHandler(LOG_FILE, maxBytes=5*1024*1024, backupCount=3, encoding='utf-8')
+    formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    rfh.setFormatter(formatter)
+    logger.addHandler(rfh)
+    
+    # Also log to stdout for dev server
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+logger.info("Initializing Thunderstorm Billing Backend...")
 
 # ================================================================
 # ASSET PATH
@@ -356,8 +376,13 @@ def save_customer(data):
 
 
 def save_customer_full(data):
-    """Upsert a customer with all fields including email."""
-    return save_customer(data)
+    """Save customer data along with their address and extra details to the SQLite DB."""
+    try:
+        logger.info(f"Saving customer profile for: {data.get('name', 'Unknown')}")
+        return save_customer(data)
+    except Exception as e:
+        logger.error(f"Error saving customer full: {e}")
+        raise
 
 
 def update_customer_notes(customer_id, notes, tags, connection_status):
@@ -802,6 +827,7 @@ def run_auto_backup():
 def mark_invoice_paid_db(invoice_num, method='Manual Entry'):
     """Direct SQL UPDATE — no delete/reinsert of entire table."""
     try:
+        logger.info(f"Marking invoice #{invoice_num} as Paid via {method}")
         conn = get_db()
         c    = conn.cursor()
         c.execute(
@@ -1094,6 +1120,7 @@ def _draw_watermark(canvas, doc):
 
 def generate_pdf(data):
     try:
+        logger.info(f"Generating PDF invoice #{data.get('invoice_num')} for {data.get('name')}")
         cfg            = load_settings()
         gst_rate       = float(cfg.get('gst_rate', 9.0)) / 100.0
         invoice_prefix = cfg.get('invoice_prefix', 'TF/25-26/HR/')

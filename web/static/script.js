@@ -30,7 +30,23 @@ let calYear  = new Date().getFullYear();
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    applyTheme();
+
+    try {
+        await eel.init_db()();
+        
+        // Dynamic Version Injection
+        const ver = await eel.get_version()();
+        if (ver && ver !== "?") {
+            document.title = "Thunderstorm Billing v" + ver;
+            document.querySelectorAll('.app-version').forEach(el => el.textContent = ver);
+        }
+        
+        initNetworkSystem();
+    } catch (e) {
+        console.error("Initialization error:", e);
+    }
     initNavigation();
     initTheme();
     initStarField();
@@ -648,7 +664,6 @@ function statusBadge(status) {
     const map = { Active: 'status-active', Suspended: 'status-suspended', Terminated: 'status-terminated' };
     return `<span class="conn-badge ${map[status] || 'status-active'}">${status || 'Active'}</span>`;
 }
-
 // CSV Import
 async function handleCSVImport(input) {
     if (!input.files || !input.files[0]) return;
@@ -1183,7 +1198,8 @@ function loadHighcharts() {
                             chart: { backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
                             title: { style: { color: '#f8fafc' } },
                             legend: { itemStyle: { color: '#94a3b8' } },
-                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', style: { color: '#f8fafc' }, borderWidth: 0, borderRadius: 8 }
+                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', style: { color: '#f8fafc' }, borderWidth: 0, borderRadius: 8 },
+                            exporting: { enabled: false }
                         });
                     }
                     highchartsLoaded = true;

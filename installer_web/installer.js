@@ -72,6 +72,10 @@ function loadVersionAndPath() {
         const badge = document.getElementById('ver-badge');
         if (el)    el.textContent    = 'v' + ver;
         if (badge) badge.textContent = '⚡ v' + ver + ' Engine';
+        
+        // Inject into dynamic placeholders
+        document.title = "Thunderstorm Billing v" + ver + " — Setup";
+        document.querySelectorAll('.app-version').forEach(node => node.textContent = 'v' + ver);
     });
 
     eel.get_default_path()(path => {
