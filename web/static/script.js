@@ -648,7 +648,12 @@ async function loadAnalytics(from = null, to = null) {
                 }
             });
         }
-    } catch (e) { console.error('Analytics load error:', e); }
+    } catch (e) {
+        console.error('Analytics load error:', e);
+        if (typeof showToast === 'function') {
+            showToast('error', 'ri-error-warning-line', 'Analytics Error: ' + e.message);
+        }
+    }
 }
 
 // ============================================================
