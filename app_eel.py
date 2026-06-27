@@ -51,6 +51,10 @@ def get_monthly_revenue():
     return backend.get_monthly_revenue()
 
 @eel.expose
+def get_monthly_revenue_filtered(date_from, date_to):
+    return backend.get_monthly_revenue_filtered(date_from, date_to)
+
+@eel.expose
 def get_plan_breakdown():
     return backend.get_plan_breakdown()
 
