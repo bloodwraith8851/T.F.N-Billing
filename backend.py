@@ -12,13 +12,7 @@ import traceback
 import logging
 from logging.handlers import RotatingFileHandler
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image, Flowable
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.lib.enums import TA_CENTER
-import PIL.Image
+# PDF libs imported dynamically on-demand for zero-latency startup
 
 # ================================================================
 # SETUP ADVANCED LOGGING (Rotating File)
@@ -1082,6 +1076,7 @@ def get_app_logs(lines=150):
 
 def _check_logo():
     """Return True if a valid PNG logo exists."""
+    import PIL.Image
     path = _logo_path()
     if not os.path.exists(path):
         return False
@@ -1092,34 +1087,44 @@ def _check_logo():
         return False
 
 
-class _Watermark(Flowable):
+class _Watermark:
     def __init__(self, logo_path, width, height, opacity=0.08):
-        Flowable.__init__(self)
+        from reportlab.platypus import Flowable
+        from reportlab.lib.pagesizes import A4
         self.logo_path = logo_path
         self.width     = width
         self.height    = height
         self.opacity   = opacity
 
-    def draw(self):
+    def draw(self, canv):
         if not os.path.exists(self.logo_path):
             return
-        self.canv.saveState()
-        self.canv.setFillAlpha(self.opacity)
+        canv.saveState()
+        canv.setFillAlpha(self.opacity)
+        from reportlab.lib.pagesizes import A4
         pw, ph = A4
-        self.canv.translate((pw - self.width) / 2, (ph - self.height) / 2)
-        self.canv.drawImage(self.logo_path, 0, 0, self.width, self.height, mask='auto')
-        self.canv.restoreState()
+        canv.translate((pw - self.width) / 2, (ph - self.height) / 2)
+        canv.drawImage(self.logo_path, 0, 0, self.width, self.height, mask='auto')
+        canv.restoreState()
 
 
 def _draw_watermark(canvas, doc):
+    from reportlab.lib.units import mm
     if _check_logo():
-        wm      = _Watermark(_logo_path(), width=150*mm, height=150*mm)
-        wm.canv = canvas
-        wm.draw()
+        wm = _Watermark(_logo_path(), width=150*mm, height=150*mm)
+        wm.draw(canvas)
 
 
 def generate_pdf(data):
     try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Flowable
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.lib.enums import TA_CENTER
+        import PIL.Image
+        
         logger.info(f"Generating PDF invoice #{data.get('invoice_num')} for {data.get('name')}")
         cfg            = load_settings()
         gst_rate       = float(cfg.get('gst_rate', 9.0)) / 100.0
@@ -1131,6 +1136,21 @@ def generate_pdf(data):
                                      rightMargin=30, leftMargin=30,
                                      topMargin=30, bottomMargin=18)
         styles   = getSampleStyleSheet()
+        
+        # Define a custom RoundedBackground Flowable
+        class RoundedBackground(Flowable):
+            def __init__(self, width, height, color):
+                Flowable.__init__(self)
+                self.width = width
+                self.height = height
+                self.color = color
+
+            def draw(self):
+                self.canv.saveState()
+                self.canv.setFillColor(self.color)
+                self.canv.roundRect(0, 0, self.width, self.height, 4, fill=1, stroke=0)
+                self.canv.restoreState()
+
         styleN   = styles['Normal']
         centered = ParagraphStyle('centered', parent=styleN,
                                   alignment=TA_CENTER, fontSize=16, spaceAfter=6)
@@ -1140,7 +1160,7 @@ def generate_pdf(data):
 
         if _check_logo():
             try:
-                logo = Image(_logo_path(), width=30*mm, height=30*mm)
+                logo = RLImage(_logo_path(), width=30*mm, height=30*mm)
                 logo.hAlign = 'CENTER'
                 elements.append(logo)
             except Exception as e:

@@ -31,19 +31,17 @@ let calYear  = new Date().getFullYear();
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    applyTheme();
-
+    // 1. Parallel Zero-Latency Initialization
     try {
-        await eel.init_db()();
+        const [_, ver] = await Promise.all([
+            eel.init_db()(),
+            eel.get_version()()
+        ]);
         
-        // Dynamic Version Injection
-        const ver = await eel.get_version()();
         if (ver && ver !== "?") {
             document.title = "Thunderstorm Billing v" + ver;
             document.querySelectorAll('.app-version').forEach(el => el.textContent = ver);
         }
-        
-        initNetworkSystem();
     } catch (e) {
         console.error("Initialization error:", e);
     }
@@ -2219,3 +2217,26 @@ window.loadDashboard = async function() {
     loadMonthlyTarget();
 };
 
+// ============================================================
+// REAL-TIME WEBSOCKET PUSH UPDATES
+// ============================================================
+eel.expose(on_live_update);
+function on_live_update(action, payload) {
+    console.log(`[WebSocket Push] Received: ${action}`);
+    
+    if (action === "INVOICE_MUTATED") {
+        if (!document.getElementById('dashboard').classList.contains('hidden-view')) {
+            loadDashboard();
+        }
+        if (!document.getElementById('logs').classList.contains('hidden-view')) {
+            loadHistory();
+        }
+        if (typeof loadOverdueDues === 'function') loadOverdueDues();
+    } 
+    else if (action === "CUSTOMER_MUTATED") {
+        if (!document.getElementById('customers').classList.contains('hidden-view')) {
+            loadCustomers();
+        }
+        if (typeof initCustomerAutocomplete === 'function') initCustomerAutocomplete();
+    }
+}

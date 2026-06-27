@@ -7,9 +7,15 @@ import backend
 import threading
 import subprocess
 import time
-import pandas as pd
 from datetime import datetime
 from backend import OUTPUT_DIR, EXPORTS_DIR
+
+def broadcast_update(action_name, payload=None):
+    """Push real-time WebSocket events to the frontend UI"""
+    try:
+        eel.on_live_update(action_name, payload)()
+    except Exception as e:
+        pass
 
 # Helper for PyInstaller resource paths
 def resource_path(relative_path):
@@ -140,6 +146,7 @@ def get_history():
 def mark_invoice_paid(invoice_num):
     try:
         backend.mark_invoice_paid_db(invoice_num, method='Manual Entry')
+        broadcast_update("INVOICE_MUTATED")
         return {"status": "success", "message": f"Invoice {invoice_num} marked as paid."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -148,6 +155,7 @@ def mark_invoice_paid(invoice_num):
 def mark_invoice_paid_with_method(invoice_num, method):
     try:
         backend.mark_invoice_paid_db(invoice_num, method=method)
+        broadcast_update("INVOICE_MUTATED")
         return {"status": "success", "message": f"Invoice {invoice_num} marked as paid via {method}."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -476,6 +484,7 @@ def open_exports_folder():
 def save_customer_full(data):
     try:
         backend.save_customer_full(data)
+        broadcast_update("CUSTOMER_MUTATED")
         return {"status": "success", "message": "Customer saved."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -488,6 +497,7 @@ def generate_bulk_invoices(customer_ids, plan, billing_from, billing_to, months,
             customer_ids, plan, billing_from, billing_to, int(months),
             float(total_amount), payment_status, payment_method
         )
+        broadcast_update("INVOICE_MUTATED")
         return {"status": "success", **result}
     except Exception as e:
         return {"status": "error", "message": str(e)}
