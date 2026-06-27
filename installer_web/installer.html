@@ -45,9 +45,9 @@
                 </div>
             </div>
 
-            <!-- v2.2.0 badge -->
+            <!-- Dynamic version badge -->
             <div style="text-align:center;margin-bottom:20px;">
-                <span class="version-badge">⚡ v2.2.0 Engine</span>
+                <span class="version-badge" id="ver-badge">⚡ Loading...</span>
             </div>
 
             <div class="sidebar-steps">
@@ -168,7 +168,7 @@
                     <p class="screen-sub" id="done-path" style="color:var(--accent);font-size:.85rem;margin-top:6px;"></p>
                 </div>
                 <div class="btn-row">
-                    <button class="btn-cancel" onclick="eel.cancel_install()()">Close</button>
+                    <button class="btn-cancel" onclick="eel.close_installer()()">Close</button>
                     <button class="btn-install success" onclick="eel.launch_app()()">
                         Launch App &nbsp;<i class="ri-rocket-2-line"></i>
                     </button>

@@ -68,8 +68,10 @@ function initParticles() {
 // ── Version + default path ───────────────────────────────────
 function loadVersionAndPath() {
     eel.get_version()(ver => {
-        const el = document.getElementById('ver-label');
-        if (el) el.textContent = 'v' + ver;
+        const el    = document.getElementById('ver-label');
+        const badge = document.getElementById('ver-badge');
+        if (el)    el.textContent    = 'v' + ver;
+        if (badge) badge.textContent = '⚡ v' + ver + ' Engine';
     });
 
     eel.get_default_path()(path => {

@@ -9,6 +9,7 @@ let dashMonthlyChart   = null;   // dashboard monthly bar
 let dashPlanChart      = null;   // dashboard plan donut
 let _currentCustomerId = null;
 let _currentCustomerData = null;  // full customer object for "New Invoice from Profile"
+let _currentProfileLogs  = [];    // cached invoice logs for profile timeline filter
 let _markPaidInvoiceNum  = null;  // current mark-paid invoice number
 let _confirmCallback     = null;  // current confirm modal callback
 let _allCustomers        = [];    // cached for autocomplete + bulk select
@@ -912,7 +913,7 @@ async function markPaid(invoiceNum) {
 }
 
 // ============================================================
-// CUSTOMER PROFILE
+// CUSTOMER PROFILE  —  Hero + Designer Timeline
 // ============================================================
 async function viewCustomerProfile(customerId) {
     try {
@@ -924,57 +925,113 @@ async function viewCustomerProfile(customerId) {
 
         const { customer, logs, stats } = response;
         _currentCustomerId   = customerId;
-        _currentCustomerData = customer;  // cache for "New Invoice from Profile"
+        _currentCustomerData = customer;
+        _currentProfileLogs  = logs;
 
+        // ── Hero strip ──
         document.getElementById('cp-name').textContent    = customer.name;
         document.getElementById('cp-avatar').textContent  = customer.name ? customer.name.substring(0, 2).toUpperCase() : 'CU';
         document.getElementById('cp-id').textContent      = customer.customer_id;
         document.getElementById('cp-phone').textContent   = customer.phone || 'Not Provided';
         document.getElementById('cp-address').textContent = customer.customer_address || 'Not Provided';
-        document.getElementById('cp-gstin').textContent   = customer.customer_gstin || 'Not Provided';
+        document.getElementById('cp-gstin').textContent   = customer.customer_gstin || '--';
+        document.getElementById('cp-status-badge').innerHTML = statusBadge(customer.connection_status || 'Active');
 
+        // ── Edit panel info ──
         const tagsHtml = (customer.tags || '').split(',').filter(t => t.trim()).map(t =>
             `<span class="tag-pill">${t.trim()}</span>`).join('') || '--';
         document.getElementById('cp-tags-display').innerHTML    = tagsHtml;
         document.getElementById('cp-notes-display').textContent = customer.notes || '--';
-        document.getElementById('cp-status-badge').innerHTML    = statusBadge(customer.connection_status || 'Active');
 
+        // ── Stat pills ──
+        document.getElementById('cp-ltv').textContent     = `₹${stats.total_paid.toLocaleString('en-IN')}`;
+        document.getElementById('cp-pending').textContent = `₹${stats.pending_dues.toLocaleString('en-IN')}`;
+        document.getElementById('cp-count').textContent   = stats.total_invoices;
+
+        // ── Edit fields ──
         document.getElementById('cp-edit-status').value = customer.connection_status || 'Active';
         document.getElementById('cp-edit-tags').value   = customer.tags  || '';
         document.getElementById('cp-edit-notes').value  = customer.notes || '';
         const emailEl = document.getElementById('cp-edit-email');
         if (emailEl) emailEl.value = customer.customer_email || '';
 
-        document.getElementById('cp-ltv').textContent     = `₹${stats.total_paid.toLocaleString('en-IN')}`;
-        document.getElementById('cp-pending').textContent = `₹${stats.pending_dues.toLocaleString('en-IN')}`;
-        document.getElementById('cp-count').textContent   = stats.total_invoices;
-
-        const tbody = document.getElementById('cp-logs-tbody');
-        tbody.innerHTML = '';
-        if (logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No historic invoices.</td></tr>`;
-        } else {
-            logs.forEach(log => {
-                const sc = log.status === 'Paid' ? 'status-paid' : log.status === 'Partial' ? 'status-partial' : 'status-unpaid';
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color:var(--text-muted);font-size:0.8em;">${log.datetime}</td>
-                        <td><span style="color:var(--text-muted);font-size:0.82em;">${log.invoice_num}</span></td>
-                        <td style="font-weight:600;">₹${Number(log.amount).toLocaleString('en-IN')}</td>
-                        <td><span class="status-badge ${sc}">${log.status}</span></td>
-                        <td style="display:flex;gap:5px;">
-                            <button class="icon-btn" style="width:28px;height:28px;color:#818cf8;" onclick="openPdf('${log.filename}')"><i class="ri-file-pdf-line"></i></button>
-                            ${log.status !== 'Paid' ? `<button class="icon-btn" style="width:28px;height:28px;color:var(--success);" onclick="markPaid('${log.invoice_num}');setTimeout(()=>viewCustomerProfile('${customerId}'),600)"><i class="ri-check-line"></i></button>` : ''}
-                        </td>
-                    </tr>`;
-            });
-        }
+        // ── Reset tabs & render timeline ──
+        document.querySelectorAll('.cp-tab').forEach(t => t.classList.remove('active'));
+        const firstTab = document.querySelector('.cp-tab');
+        if (firstTab) firstTab.classList.add('active');
+        renderProfileTimeline(logs, 'all');
 
         window.switchView('customer-profile');
     } catch (e) {
         console.error(e);
         showToast('error', 'ri-error-warning-line', 'Exception loading profile.');
     }
+}
+
+function filterProfileInvoices(filter, btn) {
+    document.querySelectorAll('.cp-tab').forEach(t => t.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderProfileTimeline(_currentProfileLogs, filter);
+}
+
+function renderProfileTimeline(logs, filter) {
+    const timeline = document.getElementById('cp-timeline');
+    const hint     = document.getElementById('tl-scroll-hint');
+
+    const filtered = (filter === 'all')
+        ? logs
+        : logs.filter(l => l.status.toLowerCase() === filter.toLowerCase());
+
+    if (!filtered || filtered.length === 0) {
+        timeline.innerHTML = `<div class="tl-empty"><i class="ri-history-line"></i> No ${filter === 'all' ? '' : filter + ' '}invoices found.</div>`;
+        if (hint) hint.style.display = 'none';
+        return;
+    }
+
+    const dotClass = { Paid: 'tl-dot-paid', Unpaid: 'tl-dot-unpaid', Partial: 'tl-dot-partial' };
+    const sc       = { Paid: 'status-paid',  Unpaid: 'status-unpaid',  Partial: 'status-partial' };
+
+    let html = '<div class="tl-track"><div class="tl-line"></div>';
+
+    filtered.forEach((log, i) => {
+        const above = (i % 2 === 0);
+        const dot   = dotClass[log.status] || 'tl-dot-unpaid';
+        const badge = sc[log.status]       || 'status-unpaid';
+
+        // Parse date
+        const d   = new Date(log.datetime);
+        const mon = isNaN(d.getTime())
+            ? log.datetime
+            : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        const safeFile   = (log.filename    || '').replace(/'/g, "\\'");
+        const safeInv    = (log.invoice_num || '').replace(/'/g, "\\'");
+        const safeCid    = (_currentCustomerId || '').replace(/'/g, "\\'");
+        const planLabel  = log.plan_name ? `<div class="tl-card-plan">${log.plan_name}</div>` : '';
+        const payBtn     = log.status !== 'Paid'
+            ? `<button class="tl-btn tl-pay-btn" onclick="markPaid('${safeInv}');setTimeout(()=>viewCustomerProfile('${safeCid}'),700)" title="Mark Paid"><i class="ri-check-line"></i></button>`
+            : '';
+
+        const card = `
+        <div class="tl-card ${above ? 'tl-card-above' : 'tl-card-below'}">
+            <div class="tl-connector ${above ? 'tl-connector-above' : 'tl-connector-below'}"></div>
+            <div class="tl-card-month">${mon}</div>
+            <div class="tl-card-inv">${log.invoice_num}</div>
+            <div class="tl-card-amount">₹${Number(log.amount).toLocaleString('en-IN')}</div>
+            ${planLabel}
+            <div class="tl-card-footer">
+                <span class="status-badge ${badge}">${log.status}</span>
+                <button class="tl-btn tl-pdf-btn" onclick="openPdf('${safeFile}')" title="View PDF"><i class="ri-file-pdf-line"></i></button>
+                ${payBtn}
+            </div>
+        </div>`;
+
+        html += `<div class="tl-node">${above ? card : ''}<div class="tl-dot ${dot}"></div>${!above ? card : ''}</div>`;
+    });
+
+    html += '</div>';
+    timeline.innerHTML = html;
+    if (hint) hint.style.display = filtered.length > 4 ? 'flex' : 'none';
 }
 
 async function saveCustomerFull() {

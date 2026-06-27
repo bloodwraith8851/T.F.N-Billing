@@ -7,7 +7,6 @@ import threading
 import subprocess
 import eel
 from tkinter import filedialog, Tk
-from win32com.client import Dispatch
 
 # ─── Module-level state ───────────────────────────────────────────────────────
 _install_target_dir: str = ''       # set by _run_install, read by launch_app
@@ -74,13 +73,25 @@ def cancel_install():
     """Abort the installer."""
     os._exit(0)
 
+@eel.expose
+def close_installer():
+    """Close installer gracefully (used by Done screen)."""
+    os._exit(0)
+
 
 @eel.expose
 def launch_app():
     """Launch the installed application then exit the installer."""
     global _install_target_dir
     if _install_target_dir:
+        # Primary: look for the expected executable name
         exe = os.path.join(_install_target_dir, 'Thunderstorm Billing.exe')
+        if not os.path.exists(exe):
+            # Fallback: scan the install dir for any .exe
+            for f in os.listdir(_install_target_dir):
+                if f.lower().endswith('.exe'):
+                    exe = os.path.join(_install_target_dir, f)
+                    break
         if os.path.exists(exe):
             try:
                 subprocess.Popen([exe], cwd=_install_target_dir)
@@ -101,6 +112,8 @@ def start_install(target_dir: str):
 def _run_install(target_dir: str):
     global _install_target_dir
     try:
+        # Sanitise path: strip whitespace and normalise separators
+        target_dir = os.path.normpath(target_dir.strip())
         os.makedirs(target_dir, exist_ok=True)
 
         # Locate source files
@@ -162,21 +175,30 @@ def _run_install(target_dir: str):
 
 def _create_shortcut(target_dir: str):
     try:
-        import subprocess
         target = os.path.join(target_dir, 'Thunderstorm Billing.exe')
-        icon = os.path.join(target_dir, 'assets', 'logo.ico')
-        
+        icon   = os.path.join(target_dir, 'assets', 'logo.ico')
+        desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+        lnk     = os.path.join(desktop, 'Thunderstorm Billing.lnk')
+
+        # Escape single-quotes for PowerShell strings
+        t_safe   = target.replace("'", "''")
+        d_safe   = target_dir.replace("'", "''")
+        ico_safe = icon.replace("'", "''")
+        lnk_safe = lnk.replace("'", "''")
+
         ps_script = f"""
-        $WshShell = New-Object -comObject WScript.Shell
-        $Shortcut = $WshShell.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\\Thunderstorm Billing.lnk')
-        $Shortcut.TargetPath = '{target}'
-        $Shortcut.WorkingDirectory = '{target_dir}'
-        if (Test-Path '{icon}') {{ $Shortcut.IconLocation = '{icon}' }}
-        $Shortcut.Save()
-        """
-        # Run hidden
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], 
-                       creationflags=subprocess.CREATE_NO_WINDOW)
+$WshShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut('{lnk_safe}')
+$Shortcut.TargetPath = '{t_safe}'
+$Shortcut.WorkingDirectory = '{d_safe}'
+if (Test-Path '{ico_safe}') {{ $Shortcut.IconLocation = '{ico_safe}' }}
+$Shortcut.Save()
+"""
+        subprocess.run(
+            ['powershell', '-NoProfile', '-NonInteractive', '-Command', ps_script],
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            timeout=15
+        )
     except Exception as e:
         print(f'Shortcut error (non-critical): {e}')
 

@@ -943,9 +943,39 @@
 
             <!-- ═══════════════ CUSTOMER PROFILE ═══════════════ -->
             <section id="customer-profile" class="view hidden-view">
-                <div class="view-header">
-                    <h1 class="page-title">Customer Profile</h1>
-                    <div style="display:flex;gap:10px;">
+
+                <!-- ── Hero Header ──────────────────────────────────── -->
+                <div class="cp-hero glass-card">
+                    <div class="cp-hero-left">
+                        <div class="cp-hero-avatar" id="cp-avatar">TF</div>
+                        <div class="cp-hero-info">
+                            <div class="cp-hero-name-row">
+                                <h1 id="cp-name">Loading...</h1>
+                                <span id="cp-status-badge"></span>
+                            </div>
+                            <div class="cp-hero-meta">
+                                <span><i class="ri-hashtag"></i><span id="cp-id">--</span></span>
+                                <span><i class="ri-phone-line"></i><span id="cp-phone">--</span></span>
+                                <span><i class="ri-map-pin-2-line"></i><span id="cp-address">--</span></span>
+                                <span><i class="ri-file-paper-line"></i><span id="cp-gstin">--</span></span>
+                            </div>
+                            <div class="cp-stat-pills">
+                                <div class="cp-stat-pill pill-ltv">
+                                    <span class="pill-label">Lifetime Value</span>
+                                    <span class="pill-value" id="cp-ltv">₹0</span>
+                                </div>
+                                <div class="cp-stat-pill pill-pending">
+                                    <span class="pill-label">Pending Dues</span>
+                                    <span class="pill-value" id="cp-pending">₹0</span>
+                                </div>
+                                <div class="cp-stat-pill pill-count">
+                                    <span class="pill-label">Total Invoices</span>
+                                    <span class="pill-value" id="cp-count">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cp-hero-actions">
                         <button class="btn btn-primary" id="cp-new-invoice-btn" onclick="newInvoiceFromProfile()">
                             <i class="ri-file-add-line"></i> New Invoice
                         </button>
@@ -955,91 +985,72 @@
                     </div>
                 </div>
 
-                <div class="profile-grid">
-                    <!-- Left: Profile Info -->
-                    <div class="profile-sidebar-col">
-                        <div class="glass-card profile-info-card">
-                            <div id="cp-avatar" class="profile-avatar">--</div>
-                            <h2 id="cp-name" class="profile-name">Loading...</h2>
-                            <p id="cp-id" class="profile-cid">--</p>
-                            <p id="cp-status-badge" style="margin-bottom:20px;"></p>
+                <!-- ── Body ──────────────────────────────────────────── -->
+                <div class="cp-body">
 
-                            <div class="profile-details">
-                                <div class="profile-detail-row">
-                                    <span class="detail-label">Phone / WhatsApp</span>
-                                    <span id="cp-phone" class="detail-value">--</span>
-                                </div>
-                                <div class="profile-detail-row">
-                                    <span class="detail-label">Address</span>
-                                    <span id="cp-address" class="detail-value">--</span>
-                                </div>
-                                <div class="profile-detail-row">
-                                    <span class="detail-label">GSTIN</span>
-                                    <span id="cp-gstin" class="detail-value">--</span>
-                                </div>
-                                <div class="profile-detail-row">
-                                    <span class="detail-label">Tags</span>
-                                    <span id="cp-tags-display" class="detail-value">--</span>
-                                </div>
-                                <div class="profile-detail-row">
-                                    <span class="detail-label">Notes</span>
-                                    <span id="cp-notes-display" class="detail-value">--</span>
-                                </div>
-                            </div>
+                    <!-- Left: Edit Panel -->
+                    <div class="cp-edit-panel glass-card">
+                        <div class="cp-edit-title"><i class="ri-user-settings-line"></i> Customer Details</div>
 
-                            <!-- Edit Form -->
-                            <div class="profile-edit-section">
-                                <p class="edit-label">Edit Customer Info</p>
-                                <select id="cp-edit-status" class="glass-select" style="margin-bottom:8px;width:100%;">
-                                    <option value="Active">Active</option>
-                                    <option value="Suspended">Suspended</option>
-                                    <option value="Terminated">Terminated</option>
-                                </select>
-                                <input type="text" id="cp-edit-tags" class="glass-input" placeholder="Tags (comma separated)" style="margin-bottom:8px;">
-                                <input type="email" id="cp-edit-email" class="glass-input" placeholder="Email address" style="margin-bottom:8px;">
-                                <textarea id="cp-edit-notes" class="glass-input" placeholder="Notes..." rows="3" style="resize:vertical;"></textarea>
-                                <button class="btn btn-primary" onclick="saveCustomerFull()" style="width:100%;margin-top:10px;">
-                                    <i class="ri-save-line"></i> Save Changes
-                                </button>
+                        <div class="cp-info-block">
+                            <div class="cp-info-row">
+                                <span class="ci-label">Tags</span>
+                                <span class="ci-value" id="cp-tags-display">--</span>
                             </div>
+                            <div class="cp-info-row">
+                                <span class="ci-label">Notes</span>
+                                <span class="ci-value" id="cp-notes-display">--</span>
+                            </div>
+                        </div>
+
+                        <div class="cp-divider"></div>
+                        <p class="cp-edit-subtitle"><i class="ri-pencil-line"></i> Edit Info</p>
+
+                        <div class="cp-edit-fields">
+                            <label class="cp-field-label">Connection Status</label>
+                            <select id="cp-edit-status" class="glass-select" style="width:100%;margin-bottom:10px;">
+                                <option value="Active">Active</option>
+                                <option value="Suspended">Suspended</option>
+                                <option value="Terminated">Terminated</option>
+                            </select>
+                            <label class="cp-field-label">Tags</label>
+                            <input type="text" id="cp-edit-tags" class="glass-input" placeholder="tag1, tag2" style="margin-bottom:10px;">
+                            <label class="cp-field-label">Email</label>
+                            <input type="email" id="cp-edit-email" class="glass-input" placeholder="email@example.com" style="margin-bottom:10px;">
+                            <label class="cp-field-label">Notes</label>
+                            <textarea id="cp-edit-notes" class="glass-input" placeholder="Add notes..." rows="3" style="resize:vertical;margin-bottom:12px;"></textarea>
+                            <button class="btn btn-primary" onclick="saveCustomerFull()" style="width:100%;">
+                                <i class="ri-save-line"></i> Save Changes
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Right: Stats + History -->
-                    <div class="profile-main-col">
-                        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
-                            <div class="stat-card dark-stat-card">
-                                <p class="stat-label">Lifetime Value (Paid)</p>
-                                <h2 id="cp-ltv" class="stat-value">₹0</h2>
-                            </div>
-                            <div class="stat-card">
-                                <p class="stat-label">Pending Dues</p>
-                                <h2 id="cp-pending" class="stat-value">₹0</h2>
-                            </div>
-                            <div class="stat-card">
-                                <p class="stat-label">Total Invoices</p>
-                                <h2 id="cp-count" class="stat-value">0</h2>
-                            </div>
+                    <!-- Right: Timeline Area -->
+                    <div class="cp-timeline-area">
+                        <div class="cp-tab-strip">
+                            <button class="cp-tab active" onclick="filterProfileInvoices('all', this)">
+                                <i class="ri-list-check"></i> All
+                            </button>
+                            <button class="cp-tab" onclick="filterProfileInvoices('paid', this)">
+                                <i class="ri-checkbox-circle-line"></i> Paid
+                            </button>
+                            <button class="cp-tab" onclick="filterProfileInvoices('unpaid', this)">
+                                <i class="ri-time-line"></i> Unpaid
+                            </button>
+                            <button class="cp-tab" onclick="filterProfileInvoices('partial', this)">
+                                <i class="ri-percent-line"></i> Partial
+                            </button>
                         </div>
 
-                        <div class="glass-card" style="margin-top:20px;">
-                            <div class="card-header">
-                                <h3 class="card-title">Invoice History</h3>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="minimal-table">
-                                    <thead><tr>
-                                        <th>Date</th>
-                                        <th>Invoice No</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr></thead>
-                                    <tbody id="cp-logs-tbody"></tbody>
-                                </table>
-                            </div>
+                        <!-- Designer Horizontal Timeline -->
+                        <div class="cp-timeline" id="cp-timeline">
+                            <div class="tl-empty"><i class="ri-history-line"></i> No invoices yet</div>
+                        </div>
+                        <div class="tl-scroll-hint" id="tl-scroll-hint" style="display:none;">
+                            <i class="ri-drag-move-2-line"></i> Scroll horizontally to explore full timeline
                         </div>
                     </div>
+
                 </div>
             </section>
 
