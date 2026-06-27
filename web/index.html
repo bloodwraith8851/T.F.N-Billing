@@ -380,13 +380,14 @@
                                         from invoices this month
                                     </p>
                                 </div>
-                                <div class="cgw-ring-wrap">
-                                    <svg class="rate-ring" viewBox="0 0 80 80" style="width:54px;height:54px;">
+                                <div class="cgw-ring-wrap" style="position:relative;">
+                                    <div id="collectionRateGauge" style="width: 80px; height: 80px; position:absolute; top:-10px; left:-10px; z-index:5;"></div>
+                                    <svg class="rate-ring" viewBox="0 0 80 80" style="width:54px;height:54px; position:relative; z-index:1;">
                                         <circle class="rate-ring-bg" cx="40" cy="40" r="34"/>
                                         <circle class="rate-ring-fill" id="rate-ring-fill" cx="40" cy="40" r="34"
                                             stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
                                     </svg>
-                                    <span id="stat-rate" class="cgw-pct">0%</span>
+                                    <span id="stat-rate" class="cgw-pct" style="position:relative; z-index:10; pointer-events:none;">0%</span>
                                 </div>
                             </div>
                         </div>
@@ -1060,6 +1061,7 @@
 <!-- Scripts -->
     <!-- Chart.js (Legacy / Offline Fallback) -->
     <script src="static/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/static/script.js"></script>
 </body>

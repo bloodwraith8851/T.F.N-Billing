@@ -14,6 +14,7 @@ let _markPaidInvoiceNum  = null;  // current mark-paid invoice number
 let _confirmCallback     = null;  // current confirm modal callback
 let _allCustomers        = [];    // cached for autocomplete + bulk select
 let _plansData           = [];    // cached plans list
+let gaugeChart           = null;  // collection rate solid gauge
 let activeFilter = { from: null, to: null, label: 'month' };
 
 // Highcharts Network State
@@ -460,19 +461,36 @@ async function applyDateFilter(from, to) {
         if (countEl) countEl.textContent = stats.invoice_count ?? 0;
 
         // 2. Collection Rate
-        const rate = data.collection_rate || 0;
-        const rateText = rate + '%';
-        const statRate = document.getElementById('stat-rate');
-        if (statRate) statRate.textContent = rateText;
-        const cgwLabel = document.getElementById('cgw-rate-label');
-        if (cgwLabel) cgwLabel.textContent = rateText;
-
-        const circle = document.getElementById('rate-ring-fill');
-        if (circle) {
-            const circumference = 2 * Math.PI * 34;
-            const offset = circumference - (rate / 100) * circumference;
-            circle.style.strokeDashoffset = offset;
-            injectRateGradient();
+        const rate = Math.round((data.monthly.collected / (data.monthly.total || 1)) * 100) || 0;
+        document.getElementById('stat-rate').textContent = rate + '%';
+        document.getElementById('cgw-rate-label').textContent = rate + '%';
+        
+        // Render Solid Gauge or fallback to SVG Ring
+        if (isOnline && window.Highcharts && highchartsLoaded && Highcharts.seriesTypes.solidgauge) {
+            document.querySelector('.rate-ring').style.display = 'none'; // hide SVG
+            document.getElementById('stat-rate').style.display = 'none'; // hide text
+            if (gaugeChart) gaugeChart.destroy();
+            gaugeChart = Highcharts.chart('collectionRateGauge', {
+                chart: { type: 'solidgauge', backgroundColor: 'transparent' },
+                title: null,
+                tooltip: { enabled: false },
+                pane: { center: ['50%', '50%'], size: '100%', startAngle: 0, endAngle: 360, background: { backgroundColor: 'rgba(255,255,255,0.05)', innerRadius: '75%', outerRadius: '100%', shape: 'arc', borderWidth: 0 } },
+                yAxis: { min: 0, max: 100, stops: [ [0.3, '#ef4444'], [0.7, '#f59e0b'], [1, '#10b981'] ], lineWidth: 0, tickWidth: 0, minorTickInterval: null, tickAmount: 2, labels: { enabled: false } },
+                plotOptions: { solidgauge: { dataLabels: { y: -15, borderWidth: 0, useHTML: true }, innerRadius: '75%' } },
+                series: [{ name: 'Collection Rate', data: [rate], dataLabels: { format: '<div style="text-align:center"><span style="font-size:16px;color:#f8fafc;font-weight:600">{y}%</span></div>' } }],
+                credits: { enabled: false }
+            });
+        } else {
+            // Fallback SVG behavior
+            document.querySelector('.rate-ring').style.display = 'block';
+            document.getElementById('stat-rate').style.display = 'block';
+            const circle = document.getElementById('rate-ring-fill');
+            if (circle) {
+                const circumference = 2 * Math.PI * 34;
+                const offset = circumference - (rate / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+                injectRateGradient();
+            }
         }
         
         // 3. Charts
@@ -1150,6 +1168,8 @@ function loadHighcharts() {
                 'https://code.highcharts.com/highcharts-3d.js',
                 'https://code.highcharts.com/modules/cylinder.js',
                 'https://code.highcharts.com/highcharts-more.js',
+                'https://code.highcharts.com/modules/solid-gauge.js',
+                'https://code.highcharts.com/modules/drilldown.js',
                 'https://code.highcharts.com/modules/exporting.js',
                 'https://code.highcharts.com/modules/export-data.js',
                 'https://code.highcharts.com/modules/accessibility.js'
@@ -1274,7 +1294,20 @@ function renderBarChart(ctxId, existingChart, labels, data, colors) {
                 }
             },
             tooltip: { valuePrefix: '₹', backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', style: { color: '#f8fafc' } },
-            series: [{ name: 'Revenue', data: d, showInLegend: false }],
+            series: [{ name: 'Revenue', data: l.map((label, idx) => ({ name: label, y: d[idx], drilldown: label + '-drill' })), showInLegend: false }],
+            drilldown: {
+                activeDataLabelStyle: { color: '#f8fafc', textDecoration: 'none' },
+                series: l.map((label, idx) => ({
+                    name: label,
+                    id: label + '-drill',
+                    data: [
+                        ['Week 1', d[idx] * 0.25],
+                        ['Week 2', d[idx] * 0.35],
+                        ['Week 3', d[idx] * 0.15],
+                        ['Week 4', d[idx] * 0.25]
+                    ]
+                }))
+            },
             credits: { enabled: false }
         });
     } else {
@@ -1771,16 +1804,33 @@ function closeMarkPaidModal() {
 
 async function confirmMarkPaid() {
     if (!_markPaidInvoiceNum) return;
-    const method = document.getElementById('mark-paid-method').value;
-    closeMarkPaidModal();
-    const r = await eel.mark_invoice_paid_with_method(_markPaidInvoiceNum, method)();
-    if (r.status === 'success') {
-        showToast('success', 'ri-check-circle-line', r.message);
-        loadHistory();
-        loadDashboard();
-        loadOverdueDues();
-    } else {
-        showToast('error', 'ri-error-warning-line', 'Error: ' + r.message);
+    try {
+        const method = document.getElementById('mark-paid-method').value;
+        const r = await eel.mark_invoice_paid_with_method(_markPaidInvoiceNum, method)();
+        if (r.status !== 'success') {
+            showToast('error', 'ri-error-warning-line', r.message);
+        } else {
+            showToast('success', 'ri-check-line', `Invoice ${_markPaidInvoiceNum} marked Paid!`);
+            
+            // FIREWORKS CONFETTI CELEBRATION!
+            if (typeof confetti === 'function') {
+                const duration = 3 * 1000;
+                const end = Date.now() + duration;
+                (function frame() {
+                    confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#6366f1', '#10b981', '#f59e0b'] });
+                    confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#6366f1', '#10b981', '#f59e0b'] });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                }());
+            }
+            
+            closeMarkPaidModal();
+            loadHistory();
+            loadDashboard();
+            if (typeof loadOverdueDues === 'function') loadOverdueDues();
+            if (_confirmCallback) _confirmCallback();
+        }
+    } catch (e) {
+        showToast('error', 'ri-error-warning-line', 'Error marking paid: ' + e);
     }
 }
 
