@@ -1147,6 +1147,8 @@ function loadHighcharts() {
         scriptBase.onload = () => {
             // Load required modules
             const modules = [
+                'https://code.highcharts.com/highcharts-3d.js',
+                'https://code.highcharts.com/modules/cylinder.js',
                 'https://code.highcharts.com/highcharts-more.js',
                 'https://code.highcharts.com/modules/exporting.js',
                 'https://code.highcharts.com/modules/export-data.js',
@@ -1249,19 +1251,30 @@ function renderBarChart(ctxId, existingChart, labels, data, colors) {
     
     if (useHighcharts) {
         return Highcharts.chart(container, {
-            chart: { type: 'column', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            chart: { 
+                type: 'cylinder', 
+                backgroundColor: 'transparent', 
+                style: { fontFamily: "'Poppins', sans-serif" },
+                options3d: { enabled: true, alpha: 10, beta: 15, depth: 40, viewDistance: 25 }
+            },
             title: { text: null },
             xAxis: { categories: l, labels: { style: { color: '#94a3b8' } }, gridLineWidth: 0, lineWidth: 0, tickWidth: 0 },
             yAxis: { title: { text: null }, labels: { style: { color: '#94a3b8' }, formatter: function() { return '₹' + this.value.toLocaleString('en-IN'); } }, gridLineColor: 'rgba(255,255,255,0.04)' },
             legend: { enabled: false },
             plotOptions: {
-                column: {
-                    borderRadius: 5, maxPointWidth: 50, colorByPoint: true,
-                    colors: colors || l.map((_, i) => `hsla(${240 + i * 22}, 75%, 65%, 0.85)`)
+                cylinder: {
+                    depth: 25, colorByPoint: true,
+                    colors: colors || l.map((_, i) => ({
+                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                        stops: [
+                            [0, `hsla(${240 + i * 22}, 85%, 70%, 1)`],
+                            [1, `hsla(${240 + i * 22}, 85%, 50%, 1)`]
+                        ]
+                    }))
                 }
             },
-            tooltip: { valuePrefix: '₹' },
-            series: [{ name: 'Revenue', data: d }],
+            tooltip: { valuePrefix: '₹', backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', style: { color: '#f8fafc' } },
+            series: [{ name: 'Revenue', data: d, showInLegend: false }],
             credits: { enabled: false }
         });
     } else {
@@ -1300,13 +1313,22 @@ function renderDonutChart(ctxId, existingChart, labels, data, colors) {
     if (useHighcharts) {
         const seriesData = labels.map((lbl, i) => ({ name: lbl, y: data[i] || 0, color: colors[i % colors.length] }));
         return Highcharts.chart(container, {
-            chart: { type: 'pie', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            chart: { 
+                type: 'pie', 
+                backgroundColor: 'transparent', 
+                style: { fontFamily: "'Poppins', sans-serif" },
+                options3d: { enabled: true, alpha: 45 }
+            },
             title: { text: null },
             plotOptions: {
-                pie: { innerSize: '75%', borderWidth: 0, dataLabels: { enabled: false }, showInLegend: true }
+                pie: { 
+                    innerSize: '65%', depth: 35, borderWidth: 0, 
+                    dataLabels: { enabled: true, color: '#f8fafc', format: '<b>{point.name}</b>: {point.y}', style: { textOutline: 'none', fontWeight: '500', fontSize: '11px' } }, 
+                    showInLegend: true 
+                }
             },
             legend: { itemStyle: { color: '#94a3b8', fontWeight: 'normal' }, symbolRadius: 6 },
-            tooltip: { pointFormat: '<b>{point.y}</b>' },
+            tooltip: { pointFormat: '<b>{point.y}</b>', backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', style: { color: '#f8fafc' } },
             series: [{ name: 'Count', data: seriesData }],
             credits: { enabled: false }
         });
@@ -1333,23 +1355,24 @@ function renderLineChart(ctxId, existingChart, labels, data, color) {
     
     if (useHighcharts) {
         return Highcharts.chart(container, {
-            chart: { type: 'area', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            chart: { type: 'areaspline', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
             title: { text: null },
             xAxis: { categories: labels, visible: false },
             yAxis: { visible: false, min: 0 },
             legend: { enabled: false },
             plotOptions: {
-                area: {
+                areaspline: {
                     fillColor: {
                         linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                        stops: [ [0, Highcharts.color(color).setOpacity(0.3).get('rgba')], [1, Highcharts.color(color).setOpacity(0).get('rgba')] ]
+                        stops: [ [0, Highcharts.color(color).setOpacity(0.5).get('rgba')], [1, Highcharts.color(color).setOpacity(0).get('rgba')] ]
                     },
-                    marker: { radius: 2 },
-                    lineWidth: 2,
-                    states: { hover: { lineWidth: 2 } },
+                    marker: { radius: 3, fillColor: color, lineWidth: 2, lineColor: '#fff' },
+                    lineWidth: 3,
+                    states: { hover: { lineWidth: 3 } },
                     threshold: null
                 }
             },
+            tooltip: { valuePrefix: '₹', backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', style: { color: '#f8fafc' } },
             series: [{ name: 'Revenue', data: data, color: color }],
             credits: { enabled: false }
         });
