@@ -1226,7 +1226,6 @@ function refreshAllCharts() {
     }
 }
 
-}
 
 // ============================================================
 // DYNAMIC CHART RENDERING (Highcharts / Chart.js Fallback)
