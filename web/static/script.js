@@ -14,8 +14,13 @@ let _markPaidInvoiceNum  = null;  // current mark-paid invoice number
 let _confirmCallback     = null;  // current confirm modal callback
 let _allCustomers        = [];    // cached for autocomplete + bulk select
 let _plansData           = [];    // cached plans list
-
 let activeFilter = { from: null, to: null, label: 'month' };
+
+// Highcharts Network State
+let isOnline = navigator.onLine;
+let highchartsLoaded = false;
+let highchartsLoading = false;
+
 
 // Calendar state
 let calMonth = new Date().getMonth();
@@ -31,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initParallax();
     initShootingStars();
     initCalendar();
+    initNetworkSystem();
 
     // Flatpickr Datepickers
     if (window.flatpickr) {
@@ -476,54 +482,9 @@ async function applyDateFilter(from, to) {
         setChartDefaults();
         const ctxDM = document.getElementById('dashMonthlyChart');
         if (ctxDM) {
-            if (dashMonthlyChart) dashMonthlyChart.destroy();
             const revenues = data.monthly.revenues || [];
             const labels = data.monthly.months || [];
-            
-            // If Day view and 0/1 elements, gracefully display
-            dashMonthlyChart = new Chart(ctxDM, {
-                type: 'bar',
-                data: {
-                    labels: labels.length ? labels : ['No Data'],
-                    datasets: [{
-                        label: 'Revenue (₹)',
-                        data:  revenues.length ? revenues : [0],
-                        backgroundColor: (revenues.length ? revenues : [0]).map((_, i) =>
-                            `hsla(${240 + i * 22}, 75%, 65%, 0.75)`),
-                        borderRadius: 9,
-                        borderSkipped: false,
-                        maxBarThickness: 50,
-                        hoverBackgroundColor: (revenues.length ? revenues : [0]).map((_, i) =>
-                            `hsla(${240 + i * 22}, 75%, 65%, 1)`),
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => ' ₹' + Number(ctx.raw).toLocaleString('en-IN')
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.04)' },
-                            ticks: { callback: v => '₹' + v.toLocaleString('en-IN'), font: { size: 10 } },
-                            border: { display: false }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 10 } },
-                            border: { display: false }
-                        }
-                    },
-                    animation: { duration: 900, easing: 'easeOutCubic' }
-                }
-            });
+            dashMonthlyChart = renderBarChart('dashMonthlyChart', dashMonthlyChart, labels, revenues);
         }
         
         // 5. Logs Table
@@ -594,59 +555,18 @@ async function loadAnalytics(from = null, to = null) {
 
         // Monthly Revenue Bar Chart (Analytics page)
         const ctxM = document.getElementById('monthlyRevenueChart');
-        if (monthlyChart) monthlyChart.destroy();
         if (ctxM) {
-            monthlyChart = new Chart(ctxM, {
-                type: 'bar',
-                data: {
-                    labels: monthly.months || [],
-                    datasets: [{
-                        label: 'Revenue (₹)',
-                        data:  monthly.revenues || [],
-                        backgroundColor: (monthly.revenues || []).map((_, i) =>
-                            `hsla(${240 + i * 20}, 70%, 65%, 0.75)`),
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        maxBarThickness: 50,
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 20 } },
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.04)' },
-                            ticks: { callback: v => '₹' + v.toLocaleString('en-IN') },
-                            border: { display: false }
-                        },
-                        x: { grid: { display: false }, border: { display: false } }
-                    }
-                }
-            });
+            monthlyChart = renderBarChart('monthlyRevenueChart', monthlyChart, monthly.months || [], monthly.revenues || []);
         }
 
         // Plan Breakdown Donut (Analytics page)
         const ctxP = document.getElementById('planBreakdownChart');
-        if (planChart) planChart.destroy();
         if (ctxP) {
             const planColors = ['#6366f1','#34d399','#f59e0b','#ef4444','#3b82f6'];
-            planChart = new Chart(ctxP, {
-                type: 'doughnut',
-                data: {
-                    labels: plans.plans?.length ? plans.plans : ['No Data'],
-                    datasets: [{
-                        data:            plans.counts?.length ? plans.counts : [1],
-                        backgroundColor: plans.plans?.length ? planColors : ['#334155'],
-                        borderWidth: 0, hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '70%',
-                    plugins: { legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } } }
-                }
-            });
+            const pLabels = plans.plans?.length ? plans.plans : ['No Data'];
+            const pData = plans.counts?.length ? plans.counts : [1];
+            const pCols = plans.plans?.length ? planColors : ['#334155'];
+            planChart = renderDonutChart('planBreakdownChart', planChart, pLabels, pData, pCols);
         }
     } catch (e) {
         console.error('Analytics load error:', e);
@@ -1088,48 +1008,16 @@ function updateCharts(stats) {
     setChartDefaults();
 
     const ctxRev = document.getElementById('revenueChart');
-    if (revenueChart) revenueChart.destroy();
     if (ctxRev) {
-        revenueChart = new Chart(ctxRev, {
-            type: 'line',
-            data: {
-                labels: ['', '', '', '', 'Now'],
-                datasets: [{
-                    data: [0, 0, 0, 0, stats.revenue],
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99,102,241,0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
+        revenueChart = renderLineChart('revenueChart', revenueChart, ['', '', '', '', 'Now'], [0, 0, 0, 0, stats.revenue], '#6366f1');
     }
 
     const ctxStat = document.getElementById('statusChart');
-    if (statusChart) statusChart.destroy();
     if (ctxStat) {
         const chartData   = stats.revenue === 0 ? [1] : [stats.paid, stats.pending];
         const chartColors = stats.revenue === 0 ? ['#334155'] : ['#10b981', '#ef4444'];
-        statusChart = new Chart(ctxStat, {
-            type: 'doughnut',
-            data: {
-                labels: stats.revenue === 0 ? ['No Data'] : ['Paid', 'Pending'],
-                datasets: [{ data: chartData, backgroundColor: chartColors, borderWidth: 0, hoverOffset: 4 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '75%',
-                plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } } }
-            }
-        });
+        const chartLabels = stats.revenue === 0 ? ['No Data'] : ['Paid', 'Pending'];
+        statusChart = renderDonutChart('statusChart', statusChart, chartLabels, chartData, chartColors);
     }
 }
 
@@ -1203,7 +1091,280 @@ async function loadAppLogs() {
 }
 
 // ============================================================
+// NETWORK & HIGHCHARTS DYNAMIC LOADING
+// ============================================================
+function initNetworkSystem() {
+    window.addEventListener('online', handleNetworkChange);
+    window.addEventListener('offline', handleNetworkChange);
+    
+    // Initial check
+    if (isOnline) {
+        loadHighcharts();
+    }
+}
+
+function handleNetworkChange() {
+    isOnline = navigator.onLine;
+    console.log(`Network status changed: ${isOnline ? 'Online' : 'Offline'}`);
+    
+    if (typeof showToast === 'function') {
+        if (isOnline) {
+            showToast('success', 'ri-wifi-line', 'Back online. Upgrading charts to Highcharts.');
+            loadHighcharts().then(() => refreshAllCharts());
+        } else {
+            showToast('warning', 'ri-wifi-off-line', 'You are offline. Falling back to local Chart.js.');
+            refreshAllCharts();
+        }
+    } else {
+        if (isOnline) {
+            loadHighcharts().then(() => refreshAllCharts());
+        } else {
+            refreshAllCharts();
+        }
+    }
+}
+
+function loadHighcharts() {
+    return new Promise((resolve, reject) => {
+        if (highchartsLoaded) return resolve();
+        if (highchartsLoading) {
+            // Wait for it to finish loading
+            const checkInterval = setInterval(() => {
+                if (highchartsLoaded) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+            return;
+        }
+        
+        highchartsLoading = true;
+        
+        // Load Highcharts Base
+        const scriptBase = document.createElement('script');
+        scriptBase.src = 'https://code.highcharts.com/highcharts.js';
+        
+        scriptBase.onload = () => {
+            // Load required modules
+            const modules = [
+                'https://code.highcharts.com/highcharts-more.js',
+                'https://code.highcharts.com/modules/exporting.js',
+                'https://code.highcharts.com/modules/export-data.js',
+                'https://code.highcharts.com/modules/accessibility.js'
+            ];
+            
+            let loadedCount = 0;
+            if (modules.length === 0) {
+                highchartsLoaded = true;
+                highchartsLoading = false;
+                resolve();
+                return;
+            }
+            
+            modules.forEach(src => {
+                const modScript = document.createElement('script');
+                modScript.src = src;
+                modScript.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === modules.length) {
+                        // Apply Dark Theme by default for Highcharts
+                        if (window.Highcharts) {
+                            Highcharts.setOptions({
+                                chart: {
+                                    backgroundColor: 'transparent',
+                                    style: { fontFamily: "'Poppins', sans-serif" }
+                                },
+                                title: { style: { color: '#f8fafc' } },
+                                legend: { itemStyle: { color: '#94a3b8' } },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    style: { color: '#f8fafc' },
+                                    borderWidth: 0,
+                                    borderRadius: 8
+                                }
+                            });
+                        }
+                        highchartsLoaded = true;
+                        highchartsLoading = false;
+                        resolve();
+                    }
+                };
+                modScript.onerror = () => {
+                    console.warn(`Failed to load Highcharts module: ${src}`);
+                    loadedCount++;
+                    if (loadedCount === modules.length) {
+                        highchartsLoaded = true;
+                        highchartsLoading = false;
+                        resolve(); // Resolve anyway to try rendering with whatever loaded
+                    }
+                };
+                document.head.appendChild(modScript);
+            });
+        };
+        
+        scriptBase.onerror = (e) => {
+            highchartsLoading = false;
+            console.error('Failed to load Highcharts', e);
+            reject(e);
+        };
+        
+        document.head.appendChild(scriptBase);
+    });
+}
+
+function refreshAllCharts() {
+    // If we are on dashboard, reload dashboard charts
+    const dashSection = document.getElementById('dashboard');
+    if (dashSection && !dashSection.classList.contains('hidden-view')) {
+        loadDashboard();
+    }
+    
+    // If we are on Analytics, reload analytics charts
+    const analyticsSection = document.getElementById('analytics');
+    if (analyticsSection && !analyticsSection.classList.contains('hidden-view')) {
+        loadAnalytics();
+    }
+}
+
+}
+
+// ============================================================
+// DYNAMIC CHART RENDERING (Highcharts / Chart.js Fallback)
+// ============================================================
+function renderBarChart(ctxId, existingChart, labels, data, colors) {
+    if (existingChart) existingChart.destroy();
+    const l = labels.length ? labels : ['No Data'];
+    const d = data.length ? data : [0];
+    
+    if (isOnline && window.Highcharts && highchartsLoaded) {
+        return Highcharts.chart(ctxId, {
+            chart: { type: 'column', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            title: { text: null },
+            xAxis: { categories: l, labels: { style: { color: '#94a3b8' } }, gridLineWidth: 0, lineWidth: 0, tickWidth: 0 },
+            yAxis: { title: { text: null }, labels: { style: { color: '#94a3b8' }, formatter: function() { return '₹' + this.value.toLocaleString('en-IN'); } }, gridLineColor: 'rgba(255,255,255,0.04)' },
+            legend: { enabled: false },
+            plotOptions: {
+                column: {
+                    borderRadius: 5, maxPointWidth: 50, colorByPoint: true,
+                    colors: colors || l.map((_, i) => `hsla(${240 + i * 22}, 75%, 65%, 0.85)`)
+                }
+            },
+            tooltip: { valuePrefix: '₹' },
+            series: [{ name: 'Revenue', data: d }],
+            credits: { enabled: false }
+        });
+    } else {
+        const ctx = document.getElementById(ctxId);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: l,
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: d,
+                    backgroundColor: colors || l.map((_, i) => `hsla(${240 + i * 22}, 75%, 65%, 0.75)`),
+                    borderRadius: 9,
+                    maxBarThickness: 50,
+                    hoverBackgroundColor: colors ? null : l.map((_, i) => `hsla(${240 + i * 22}, 75%, 65%, 1)`)
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 20 } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ₹' + Number(c.raw).toLocaleString('en-IN') } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }, border: { display: false } },
+                    x: { grid: { display: false }, border: { display: false } }
+                }
+            }
+        });
+    }
+}
+
+function renderDonutChart(ctxId, existingChart, labels, data, colors) {
+    if (existingChart) existingChart.destroy();
+    if (isOnline && window.Highcharts && highchartsLoaded) {
+        const seriesData = labels.map((lbl, i) => ({ name: lbl, y: data[i] || 0, color: colors[i % colors.length] }));
+        return Highcharts.chart(ctxId, {
+            chart: { type: 'pie', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            title: { text: null },
+            plotOptions: {
+                pie: { innerSize: '75%', borderWidth: 0, dataLabels: { enabled: false }, showInLegend: true }
+            },
+            legend: { itemStyle: { color: '#94a3b8', fontWeight: 'normal' }, symbolRadius: 6 },
+            tooltip: { pointFormat: '<b>{point.y}</b>' },
+            series: [{ name: 'Count', data: seriesData }],
+            credits: { enabled: false }
+        });
+    } else {
+        const ctx = document.getElementById(ctxId);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '75%',
+                plugins: { legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } } }
+            }
+        });
+    }
+}
+
+function renderLineChart(ctxId, existingChart, labels, data, color) {
+    if (existingChart) existingChart.destroy();
+    if (isOnline && window.Highcharts && highchartsLoaded) {
+        return Highcharts.chart(ctxId, {
+            chart: { type: 'area', backgroundColor: 'transparent', style: { fontFamily: "'Poppins', sans-serif" } },
+            title: { text: null },
+            xAxis: { categories: labels, visible: false },
+            yAxis: { visible: false, min: 0 },
+            legend: { enabled: false },
+            plotOptions: {
+                area: {
+                    fillColor: {
+                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                        stops: [ [0, Highcharts.color(color).setOpacity(0.3).get('rgba')], [1, Highcharts.color(color).setOpacity(0).get('rgba')] ]
+                    },
+                    marker: { radius: 2 },
+                    lineWidth: 2,
+                    states: { hover: { lineWidth: 2 } },
+                    threshold: null
+                }
+            },
+            series: [{ name: 'Revenue', data: data, color: color }],
+            credits: { enabled: false }
+        });
+    } else {
+        const ctx = document.getElementById(ctxId);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data, borderColor: color, backgroundColor: 'rgba(99,102,241,0.1)',
+                    borderWidth: 2, tension: 0.4, fill: true
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, display: false },
+                    x: { display: false }
+                }
+            }
+        });
+    }
+}
+
+// ============================================================
 // SETTINGS
+
 // ============================================================
 async function loadSettings() {
     try {
